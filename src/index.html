@@ -151,8 +151,10 @@ input[type="file"]{display:none}
     </div>
     <div class="sep"></div>
     <div class="group">
-      <button id="btn-export">导出</button>
-      <button id="btn-import">导入</button>
+      <button id="btn-new" title="Ctrl+N">新建</button>
+      <button id="btn-import" title="Ctrl+O">打开</button>
+      <button id="btn-save" title="Ctrl+S">保存</button>
+      <button id="btn-export" title="Ctrl+Shift+S">另存为</button>
       <button id="btn-export-img">图片</button>
     </div>
     <div class="spacer"></div>
@@ -171,7 +173,7 @@ input[type="file"]{display:none}
       <div id="batch-bar"><span id="batch-count"></span><button onclick="batchCat('daily')">日常</button><button onclick="batchCat('conflict')">冲突</button><button onclick="batchCat('turning')">转折</button><button onclick="batchCat('climax')">高潮</button><button onclick="batchCat('ending')">结局</button><button class="bd" onclick="batchDel()">删除</button><button onclick="clearMulti()">取消</button></div>
     </div>
     <aside id="panel">
-      <div id="p-empty"><h3>故事树</h3><div class="help-block"><p>双击空白添加节点</p><p><kbd>Shift</kbd>+点击连线 / 从节点底部拖出连线</p><p><kbd>Alt</kbd>+拖拽框选多个节点</p><p>滚轮缩放 拖拽平移 <kbd>Ctrl+F</kbd> 搜索</p><p><kbd>Del</kbd> 删除 <kbd>Ctrl+Z</kbd> 撤销</p></div></div>
+      <div id="p-empty"><h3>故事树</h3><div class="help-block"><p>双击空白添加节点</p><p><kbd>Shift</kbd>+点击连线 / 从节点底部拖出连线</p><p><kbd>Alt</kbd>+拖拽框选多个节点</p><p>滚轮缩放 拖拽平移 <kbd>Ctrl+F</kbd> 搜索</p><p><kbd>Del</kbd> 删除 <kbd>Ctrl+Z</kbd> 撤销</p><p><kbd>Ctrl+S</kbd> 保存 <kbd>Ctrl+O</kbd> 打开</p></div></div>
       <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>情节描述</label><textarea id="nd-text" rows="4" placeholder="描述这个情节..."></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
       <div id="p-edge" style="display:none"><h3>连线</h3><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><button class="btn-danger" id="ed-del">删除连线</button></div>
     </aside>
@@ -390,7 +392,13 @@ document.addEventListener('keydown',e=>{
   if(e.key==='c'||e.key==='C')setMode('connect');
   if(e.key==='Escape'){connFrom=null;multiSel.clear();updateBatch();select(null,null);setMode('select');}
 });
-document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();openSearch();}},true);
+document.addEventListener('keydown',function(e){
+  if(!(e.ctrlKey||e.metaKey))return;
+  if(e.key==='f'){e.preventDefault();openSearch();}
+  if(e.key==='s'){e.preventDefault();e.shiftKey?fileSaveAs():fileSave();}
+  if(e.key==='o'){e.preventDefault();fileOpen();}
+  if(e.key==='n'){e.preventDefault();fileNew();}
+},true);
 
 // --- Layout ---
 document.getElementById('btn-layout').onclick=autoLayout;
@@ -432,17 +440,85 @@ document.getElementById('s-close').onclick=closeSearch;
 document.getElementById('btn-stats').onclick=()=>{const el=document.getElementById('stats-panel');if(el.classList.contains('show')){el.classList.remove('show');return;}el.classList.add('show');renderStats();};
 function renderStats(){const el=document.getElementById('stats-panel');if(!nodes.length){el.innerHTML='<h4>统计</h4><div class="stat-row"><span class="stat-label">空画布</span></div>';return;}const cm={},pm={};nodes.forEach(n=>{cm[n.id]=[];pm[n.id]=[];});edges.forEach(e=>{if(cm[e.from])cm[e.from].push(e.to);if(pm[e.to])pm[e.to].push(e.from);});const roots=nodes.filter(n=>pm[n.id].length===0),leaves=nodes.filter(n=>cm[n.id].length===0),orphans=nodes.filter(n=>pm[n.id].length===0&&cm[n.id].length===0);let maxP=0;function dfs(id,d,v){if(v.has(id))return;v.add(id);maxP=Math.max(maxP,d);(cm[id]||[]).forEach(c=>dfs(c,d+1,v));v.delete(id);}roots.forEach(r=>dfs(r.id,1,new Set()));if(!maxP&&nodes.length)maxP=1;const cc={};Object.keys(CATS).forEach(k=>cc[k]=0);nodes.forEach(n=>cc[n.cat||'daily']++);const chc={};nodes.forEach(n=>n.chars.forEach(c=>chc[c]=(chc[c]||0)+1));const top=Object.entries(chc).sort((a,b)=>b[1]-a[1]).slice(0,5);let h='<h4>统计</h4>';h+=`<div class="stat-row"><span class="stat-label">节点</span><span class="stat-val">${nodes.length}</span></div>`;h+=`<div class="stat-row"><span class="stat-label">连线</span><span class="stat-val">${edges.length}</span></div>`;h+=`<div class="stat-row"><span class="stat-label">起点/终点</span><span class="stat-val">${roots.length}/${leaves.length}</span></div>`;h+=`<div class="stat-row"><span class="stat-label">最长路线</span><span class="stat-val">${maxP} 步</span></div>`;h+=`<div class="stat-row"><span class="stat-label">分支/汇合</span><span class="stat-val">${nodes.filter(n=>cm[n.id].length>1).length}/${nodes.filter(n=>pm[n.id].length>1).length}</span></div>`;if(orphans.length)h+=`<div class="stat-row"><span class="stat-label">孤立</span><span class="stat-val" style="color:#f38ba8">${orphans.length}</span></div>`;h+='<div class="stat-section"><h5>分类</h5><div class="stat-bar">';Object.entries(CATS).forEach(([k,v])=>{if(cc[k])h+=`<span style="background:${v.color};width:${cc[k]/nodes.length*100}%" title="${v.name}: ${cc[k]}"></span>`;});h+='</div>';Object.entries(CATS).forEach(([k,v])=>{if(cc[k])h+=`<div class="stat-row"><span class="stat-label">${v.name}</span><span class="stat-val">${cc[k]}</span></div>`;});h+='</div>';if(top.length){h+='<div class="stat-section"><h5>角色 TOP 5</h5>';top.forEach(([c,cnt])=>{h+=`<div class="stat-row"><span class="stat-label" style="color:${charColor(c)}">${escHtml(c)}</span><span class="stat-val">${cnt}</span></div>`;});h+='</div>';}el.innerHTML=h;}
 
-// --- Export / Import (Tauri native) ---
+// --- File Management (Tauri native) ---
 const isTauri = !!(window.__TAURI__);
-document.getElementById('btn-export').onclick=async()=>{
-  const data=JSON.stringify({version:1,nodes:nodes.map(n=>({id:n.id,text:n.text,characters:n.chars,category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}))},null,2);
-  if(isTauri){try{const path=await window.__TAURI__.dialog.save({filters:[{name:'JSON',extensions:['json']}],defaultPath:'story-tree.json'});if(path)await window.__TAURI__.fs.writeTextFile(path,data);}catch(e){console.error(e);}}
-  else{const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='story-tree.json';a.click();URL.revokeObjectURL(a.href);}
-};
-document.getElementById('btn-import').onclick=async()=>{
-  if(isTauri){try{const path=await window.__TAURI__.dialog.open({filters:[{name:'JSON',extensions:['json']}],multiple:false});if(path){const text=await window.__TAURI__.fs.readTextFile(path);const data=JSON.parse(text);loadData(data);pushHistory();fitView();}}catch(e){alert('导入失败: '+e);}}
-  else{const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(){const f=this.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{loadData(JSON.parse(e.target.result));pushHistory();fitView();}catch(err){alert('JSON 解析失败: '+err.message);}};r.readAsText(f);};inp.click();}
-};
+let currentFile = null;
+let dirty = false;
+let savedSnap = '';
+
+function markDirty() { dirty = true; updateTitle(); }
+function markClean() { dirty = false; savedSnap = serializeState(); updateTitle(); }
+function updateTitle() {
+  const name = currentFile ? currentFile.split(/[/\\]/).pop() : '未命名';
+  const t = (dirty ? '* ' : '') + name + ' - 故事树';
+  document.title = t;
+  if (isTauri) try { window.__TAURI__.window.getCurrentWindow().setTitle(t); } catch(e) {}
+}
+
+function getFileData() {
+  return JSON.stringify({version:1,
+    nodes:nodes.map(n=>({id:n.id,text:n.text,characters:n.chars,category:n.cat,x:n.x,y:n.y})),
+    edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}))
+  },null,2);
+}
+
+const _origSave = save;
+const _origPushHist = pushHistory;
+save = function() { _origSave(); if (savedSnap && serializeState() !== savedSnap) { dirty = true; updateTitle(); } };
+pushHistory = function() { _origPushHist(); if (savedSnap && serializeState() !== savedSnap) { dirty = true; updateTitle(); } };
+
+async function fileSave() {
+  const data = getFileData();
+  if (isTauri && currentFile) {
+    try { await window.__TAURI__.fs.writeTextFile(currentFile, data); markClean(); } catch(e) { console.error(e); }
+  } else await fileSaveAs();
+}
+
+async function fileSaveAs() {
+  const data = getFileData();
+  if (isTauri) {
+    try {
+      const path = await window.__TAURI__.dialog.save({filters:[{name:'JSON',extensions:['json']}],defaultPath: currentFile || 'story-tree.json'});
+      if (path) { await window.__TAURI__.fs.writeTextFile(path, data); currentFile = path; markClean(); }
+    } catch(e) { console.error(e); }
+  } else {
+    const blob = new Blob([data],{type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'story-tree.json'; a.click(); URL.revokeObjectURL(a.href);
+  }
+}
+
+async function fileOpen() {
+  if (dirty) { if (!confirm('当前文件未保存，确定要打开新文件吗？')) return; }
+  if (isTauri) {
+    try {
+      const path = await window.__TAURI__.dialog.open({filters:[{name:'JSON',extensions:['json']}],multiple:false});
+      if (path) {
+        const text = await window.__TAURI__.fs.readTextFile(path);
+        loadData(JSON.parse(text)); currentFile = path; pushHistory(); markClean(); fitView();
+      }
+    } catch(e) { alert('打开失败: '+e); }
+  } else {
+    const inp = document.createElement('input'); inp.type='file'; inp.accept='.json';
+    inp.onchange = function() { const f=this.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{try{loadData(JSON.parse(e.target.result));currentFile=f.name;pushHistory();markClean();fitView();}catch(err){alert('JSON 解析失败: '+err.message);}};r.readAsText(f); };
+    inp.click();
+  }
+}
+
+function fileNew() {
+  if (dirty) { if (!confirm('当前文件未保存，确定要新建吗？')) return; }
+  nodes = []; edges = []; nid = 1; eid = 1; currentFile = null;
+  collapsed.clear(); multiSel.clear(); charFilter.clear();
+  select(null, null); save(); pushHistory(); markClean();
+  pan = {x: cvs.clientWidth/2, y: 80}; zoom = 1;
+  document.getElementById('zoom-ind').textContent = '100%';
+  render(); updateBatch();
+}
+
+document.getElementById('btn-new').onclick = fileNew;
+document.getElementById('btn-save').onclick = fileSave;
+document.getElementById('btn-export').onclick = fileSaveAs;
+document.getElementById('btn-import').onclick = fileOpen;
+
 function loadData(data){nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',chars:n.characters||[],cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||''}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();}
 
 // --- Persistence ---
@@ -453,8 +529,9 @@ function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;cons
 // --- Init ---
 function resize(){const dpr=window.devicePixelRatio||1,r=wrap.getBoundingClientRect();cvs.width=r.width*dpr;cvs.height=r.height*dpr;cvs.style.width=r.width+'px';cvs.style.height=r.height+'px';render();}
 window.addEventListener('resize',resize);
-load();resize();pushHistory();
+load();resize();pushHistory();markClean();
 if(!nodes.length){pan.x=cvs.clientWidth/2;pan.y=80;render();}
+updateTitle();
 
 // --- API Settings ---
 const CFG_KEY='story-tree-api-cfg';
