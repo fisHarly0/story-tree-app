@@ -153,6 +153,14 @@ input[type="file"]{display:none}
 .wt-choice.locked{opacity:.4;pointer-events:none;position:relative}
 .wt-choice.locked::after{content:'[条件未满足]';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:10px;color:#f38ba8}
 .pc.locked{opacity:.35;pointer-events:none}
+.var-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:11px;margin:2px;background:#74c7ec;color:#1e1e2e}
+.var-tag .fx{cursor:pointer;opacity:.6;font-size:12px}.var-tag .fx:hover{opacity:1}
+.var-mod{font-weight:700}
+.var-cond{background:#f9e2af;color:#1e1e2e}
+#wt-vars,#pres-vars{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
+#wt-vars span,#pres-vars span{padding:2px 8px;border-radius:10px;font-size:11px;background:#74c7ec;color:#1e1e2e}
+#drop-overlay{display:none;position:fixed;inset:0;background:rgba(137,180,250,0.15);border:3px dashed var(--sel);z-index:300;justify-content:center;align-items:center;font-size:20px;color:var(--sel)}
+#drop-overlay.show{display:flex}
 #pres-overlay{display:none;position:fixed;inset:0;background:#0d0d14;z-index:200;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}
 #pres-overlay.show{display:flex}
 #pres-inner{max-width:720px;width:92%;text-align:center}
@@ -206,6 +214,7 @@ input[type="file"]{display:none}
       <button id="btn-export" title="Ctrl+Shift+S">另存为</button>
       <button id="btn-export-img">图片</button>
       <button id="btn-export-play">可玩HTML</button>
+      <button id="btn-export-md">大纲</button>
     </div>
     <div class="spacer"></div>
     <button id="btn-theme">浅色</button>
@@ -227,11 +236,12 @@ input[type="file"]{display:none}
     </div>
     <aside id="panel">
       <div id="p-empty"><h3>故事树</h3><div class="help-block"><p>双击空白添加节点</p><p><kbd>Shift</kbd>+点击连线 / 从节点底部拖出连线</p><p><kbd>Alt</kbd>+拖拽框选多个节点</p><p>滚轮缩放 拖拽平移 <kbd>Ctrl+F</kbd> 搜索</p><p><kbd>Del</kbd> 删除 <kbd>Ctrl+Z</kbd> 撤销</p><p><kbd>Ctrl+S</kbd> 保存 <kbd>Ctrl+O</kbd> 打开</p></div></div>
-      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>摘要 (画布显示)</label><textarea id="nd-text" rows="2" placeholder="简短概括..."></textarea><label>正文</label><textarea id="nd-body" rows="6" placeholder="完整场景描写、对话、细节..."></textarea><label>备注</label><textarea id="nd-notes" rows="2" placeholder="创作备忘、待修改..." style="font-style:italic;opacity:.8"></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><label>AI 指令 (本节点补充)</label><textarea id="nd-ai-inst" rows="2" placeholder="针对此节点的 AI 生成指令..." style="font-size:11px"></textarea><label>设置标记 (进入此节点时)</label><div class="tag-list" id="nd-flags-set"></div><div class="flag-add"><input id="nd-flag-in" type="text" placeholder="标记名 (如: 有钥匙)"><button id="nd-flag-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
-      <div id="p-edge" style="display:none"><h3>连线</h3><label>类型</label><div class="etype-btns" id="ed-type"></div><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><label>需要标记 (全部满足才显示)</label><div class="tag-list" id="ed-req-flags"></div><div class="flag-add"><input id="ed-req-in" type="text" placeholder="标记名..."><button id="ed-req-add">+</button></div><label>排除标记 (有则隐藏)</label><div class="tag-list" id="ed-not-flags"></div><div class="flag-add"><input id="ed-not-in" type="text" placeholder="标记名..."><button id="ed-not-add">+</button></div><button class="btn-danger" id="ed-del">删除连线</button></div>
+      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>摘要 (画布显示)</label><textarea id="nd-text" rows="2" placeholder="简短概括..."></textarea><label>正文</label><textarea id="nd-body" rows="6" placeholder="完整场景描写、对话、细节..."></textarea><label>备注</label><textarea id="nd-notes" rows="2" placeholder="创作备忘、待修改..." style="font-style:italic;opacity:.8"></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><label>AI 指令 (本节点补充)</label><textarea id="nd-ai-inst" rows="2" placeholder="针对此节点的 AI 生成指令..." style="font-size:11px"></textarea><label>变量修改 (进入时)</label><div class="tag-list" id="nd-vars"></div><div class="flag-add"><input id="nd-var-name" type="text" placeholder="变量名" style="width:40%"><input id="nd-var-val" type="text" placeholder="+10 或 -5 或 =100" style="width:30%"><button id="nd-var-add">+</button></div><label>设置标记 (进入此节点时)</label><div class="tag-list" id="nd-flags-set"></div><div class="flag-add"><input id="nd-flag-in" type="text" placeholder="标记名 (如: 有钥匙)"><button id="nd-flag-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
+      <div id="p-edge" style="display:none"><h3>连线</h3><label>类型</label><div class="etype-btns" id="ed-type"></div><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><label>需要标记 (全部满足才显示)</label><div class="tag-list" id="ed-req-flags"></div><div class="flag-add"><input id="ed-req-in" type="text" placeholder="标记名..."><button id="ed-req-add">+</button></div><label>排除标记 (有则隐藏)</label><div class="tag-list" id="ed-not-flags"></div><div class="flag-add"><input id="ed-not-in" type="text" placeholder="标记名..."><button id="ed-not-add">+</button></div><label>变量条件 (如: HP>50)</label><div class="tag-list" id="ed-var-conds"></div><div class="flag-add"><input id="ed-vc-in" type="text" placeholder="变量名>值 或 变量名<值"><button id="ed-vc-add">+</button></div><button class="btn-danger" id="ed-del">删除连线</button></div>
     </aside>
   </div>
 </div>
+<div id="drop-overlay">松开以打开文件</div>
 <div id="pres-overlay"><div id="pres-inner"><div id="pres-cat"></div><div id="pres-text"></div><div id="pres-chars"></div><div id="pres-choices"></div></div><div id="pres-footer"><button onclick="presBack()">后退</button><button onclick="presRestart()">重来</button><button onclick="presClose()">退出 (Esc)</button></div><div id="pres-step"></div></div>
 <div id="modal-overlay"><div id="modal" style="max-height:85vh;overflow-y:auto"><h3>API 与 AI 设置</h3><label>接口地址 (OpenAI 兼容)</label><input id="cfg-endpoint" type="text" placeholder="https://api.openai.com/v1"><label>密钥</label><input id="cfg-key" type="password" placeholder="sk-..."><label>模型</label><input id="cfg-model" type="text" placeholder="gpt-4o"><hr style="border-color:var(--border);margin:16px 0"><h3>AI 行为配置</h3><label>全局系统提示</label><textarea id="cfg-system" rows="2" placeholder="AI 生成内容时的全局指令..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>世界规则</label><textarea id="cfg-world" rows="2" placeholder="世界观、时代背景、物理法则..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>语气风格</label><textarea id="cfg-tone" rows="2" placeholder="文风、叙事视角、情感基调..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>角色定义 <button id="cfg-char-add" style="background:var(--sel);color:#fff;border:none;border-radius:4px;padding:1px 8px;cursor:pointer;font-size:11px;margin-left:8px">+</button></label><div id="cfg-chars"></div><hr style="border-color:var(--border);margin:16px 0"><label>生成分支数 <span id="cfg-bc-v" style="color:var(--sel);float:right">3</span></label><input type="range" id="cfg-bc" min="1" max="5" value="3" style="width:100%;accent-color:var(--sel)"><label>Temperature <span id="cfg-temp-v" style="color:var(--sel);float:right">0.9</span></label><input type="range" id="cfg-temp" min="0" max="20" value="9" style="width:100%;accent-color:var(--sel)"><label style="display:flex;align-items:center;gap:8px;margin-top:8px"><input type="checkbox" id="cfg-auto-gen" checked> 叶子节点自动 AI 续写 (走读/演示模式)</label><div class="modal-btns"><button class="btn-secondary" id="cfg-cancel">取消</button><button class="btn-primary" id="cfg-save">保存</button></div></div></div>
 <div id="wt-overlay"><div class="wt-container"><div class="wt-header"><button id="wt-back">后退</button><span class="wt-step" id="wt-step"></span><button id="wt-restart">重新开始</button><button id="wt-close">退出</button></div><div class="wt-cat-bar" id="wt-cat-bar"></div><div class="wt-card" id="wt-card"></div><div class="wt-choices" id="wt-choices"></div></div></div>
@@ -280,9 +290,9 @@ document.getElementById('btn-theme').onclick=()=>{isLight=!isLight;T=isLight?LIG
 (function(){const t=localStorage.getItem('st-theme');if(t==='light'){isLight=true;T=LIGHT;document.body.classList.add('light');document.getElementById('btn-theme').textContent='深色';}})();
 
 // --- History ---
-function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,chars:[...n.chars],setFlags:[...(n.setFlags||[])],ai:n.aiInstructions||'',cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype,reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}))});}
+function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,chars:[...n.chars],setFlags:[...(n.setFlags||[])],varMods:[...(n.varMods||[])],ai:n.aiInstructions||'',cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype,reqFlags:e.reqFlags||[],notFlags:e.notFlags||[],varConds:e.varConds||[]}))});}
 function pushHistory(){const snap=serializeState();if(historyIdx>=0&&history[historyIdx]===snap)return;history.length=historyIdx+1;history.push(snap);if(history.length>MAX_HIST){history.shift();historyIdx--;}historyIdx=history.length-1;updateUndoButtons();}
-function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,body:n.body||'',notes:n.notes||'',chars:n.chars||[],setFlags:n.setFlags||[],aiInstructions:n.ai||'',cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
+function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,body:n.body||'',notes:n.notes||'',chars:n.chars||[],setFlags:n.setFlags||[],varMods:n.varMods||[],aiInstructions:n.ai||'',cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[],varConds:e.varConds||[]}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
 function undo(){if(historyIdx<=0)return;historyIdx--;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function redo(){if(historyIdx>=history.length-1)return;historyIdx++;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function updateUndoButtons(){document.getElementById('btn-undo').disabled=historyIdx<=0;document.getElementById('btn-redo').disabled=historyIdx>=history.length-1;}
@@ -322,8 +332,8 @@ ctx.restore();}
 function nodeAt(wx,wy){for(let i=nodes.length-1;i>=0;i--){const n=nodes[i];if(!isHidden(n.id)&&wx>=n.x-n.w/2&&wx<=n.x+n.w/2&&wy>=n.y-n.h/2&&wy<=n.y+n.h/2)return n;}return null;}
 function edgeAt(wx,wy){let best=null,bestD=12;for(const e of edges){if(!edgeVis(e))continue;const p=edgePoints(e);if(!p)continue;for(let t=0;t<=1;t+=.03){const d=Math.hypot(wx-bezAt(t,p.x1,p.cx1,p.cx2,p.x2),wy-bezAt(t,p.y1,p.cy1,p.cy2,p.y2));if(d<bestD){bestD=d;best=e;}}}return best;}
 
-function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',body:'',notes:'',chars:[],setFlags:[],aiInstructions:'',cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
-function addEdge(fid,tid){if(fid===tid)return null;if(edges.find(e=>e.from===fid&&e.to===tid))return null;const e={id:eid++,from:fid,to:tid,probability:50,label:'',etype:'cause',reqFlags:[],notFlags:[]};edges.push(e);return e;}
+function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',body:'',notes:'',chars:[],setFlags:[],varMods:[],aiInstructions:'',cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
+function addEdge(fid,tid){if(fid===tid)return null;if(edges.find(e=>e.from===fid&&e.to===tid))return null;const e={id:eid++,from:fid,to:tid,probability:50,label:'',etype:'cause',reqFlags:[],notFlags:[],varConds:[]};edges.push(e);return e;}
 function deleteNode(node){edges=edges.filter(e=>e.from!==node.id&&e.to!==node.id);nodes=nodes.filter(n=>n!==node);if(selNode===node)selNode=null;multiSel.delete(node.id);}
 function deleteEdge(edge){edges=edges.filter(e=>e!==edge);if(selEdge===edge)selEdge=null;}
 function select(node,edge){selNode=node;selEdge=edge;if(node)multiSel.clear();updatePanel();updateBatch();render();}
@@ -337,7 +347,7 @@ window.batchCat=batchCat;window.batchDel=batchDel;window.clearMulti=clearMulti;
 
 // --- Panel ---
 const pEmpty=document.getElementById('p-empty'),pNode=document.getElementById('p-node'),pEdge=document.getElementById('p-edge');
-function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;document.getElementById('nd-body').value=selNode.body||'';document.getElementById('nd-notes').value=selNode.notes||'';document.getElementById('nd-ai-inst').value=selNode.aiInstructions||'';renderCatBtns();renderTags();renderNodeFlags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';renderEtypeBtns();renderEdgeFlags();}}
+function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;document.getElementById('nd-body').value=selNode.body||'';document.getElementById('nd-notes').value=selNode.notes||'';document.getElementById('nd-ai-inst').value=selNode.aiInstructions||'';renderCatBtns();renderTags();renderNodeVars();renderNodeFlags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';renderEtypeBtns();renderEdgeFlags();renderEdgeVarConds();}}
 function renderCatBtns(){const el=document.getElementById('nd-cat');el.innerHTML='';Object.entries(CATS).forEach(([k,v])=>{const b=document.createElement('button');b.className='cat-btn'+(selNode.cat===k?' active':'');b.style.borderColor=v.color;b.textContent=v.name;b.onclick=()=>{if(!selNode)return;pushHistory();selNode.cat=k;renderCatBtns();save();render();};el.appendChild(b);});}
 function renderTags(){const el=document.getElementById('nd-tags');el.innerHTML='';if(!selNode)return;selNode.chars.forEach((ch,i)=>{const tag=document.createElement('span');tag.className='tag-item';tag.style.background=charColor(ch);tag.innerHTML=ch+' <span class="tag-x" data-i="'+i+'">x</span>';el.appendChild(tag);});el.querySelectorAll('.tag-x').forEach(x=>{x.onclick=()=>{pushHistory();selNode.chars.splice(+x.dataset.i,1);measure(selNode);renderTags();save();render();};});}
 // --- Flag editors ---
@@ -510,19 +520,20 @@ document.getElementById('btn-export-img').onclick=exportImage;
 function exportImage(){if(!nodes.length)return;let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;nodes.forEach(n=>{minX=Math.min(minX,n.x-n.w/2-20);minY=Math.min(minY,n.y-n.h/2-20);maxX=Math.max(maxX,n.x+n.w/2+20);maxY=Math.max(maxY,n.y+n.h/2+20);});const pad=50,w=maxX-minX+pad*2,h=maxY-minY+pad*2,off=document.createElement('canvas'),sc=2;off.width=w*sc;off.height=h*sc;const oc=ctx,os=selNode,oe=selEdge,om=mode,of2=new Set(charFilter),ocl=new Set(collapsed);ctx=off.getContext('2d');selNode=null;selEdge=null;mode='select';charFilter.clear();collapsed.clear();ctx.scale(sc,sc);ctx.fillStyle=T.bg;ctx.fillRect(0,0,w,h);ctx.translate(-minX+pad,-minY+pad);edges.forEach(e=>drawEdge(e,true));nodes.forEach(n=>drawNode(n,true));ctx=oc;selNode=os;selEdge=oe;mode=om;charFilter=of2;collapsed=ocl;off.toBlob(async blob=>{if(isTauri){try{const p=await window.__TAURI__.dialog.save({filters:[{name:'PNG',extensions:['png']}],defaultPath:'story-tree.png'});if(p){const buf=await blob.arrayBuffer();await window.__TAURI__.fs.writeFile(p,new Uint8Array(buf));}}catch(e){console.error(e);}}else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='story-tree.png';a.click();URL.revokeObjectURL(a.href);}});}
 
 // --- Walkthrough ---
-let wtPath=[],wtFlags=new Set();
-function wtCollectFlags(){wtFlags.clear();wtPath.forEach(nid=>{const n=nodes.find(x=>x.id===nid);if(n&&n.setFlags)n.setFlags.forEach(f=>wtFlags.add(f));});}
-function wtEdgeAvail(e){if(e.reqFlags&&e.reqFlags.length&&!e.reqFlags.every(f=>wtFlags.has(f)))return false;if(e.notFlags&&e.notFlags.length&&e.notFlags.some(f=>wtFlags.has(f)))return false;return true;}
+let wtPath=[],wtFlags=new Set(),wtVars={};
+function wtCollectState(){wtFlags.clear();wtVars={};wtPath.forEach(nid=>{const n=nodes.find(x=>x.id===nid);if(n){if(n.setFlags)n.setFlags.forEach(f=>wtFlags.add(f));applyVarMods(wtVars,n);}});}
+function wtEdgeAvail(e){if(e.reqFlags&&e.reqFlags.length&&!e.reqFlags.every(f=>wtFlags.has(f)))return false;if(e.notFlags&&e.notFlags.length&&e.notFlags.some(f=>wtFlags.has(f)))return false;if(!checkVarConds(wtVars,e))return false;return true;}
 document.getElementById('btn-walk').onclick=startWalkthrough;
 document.getElementById('wt-close').onclick=endWalkthrough;
 document.getElementById('wt-restart').onclick=()=>{wtPath=[];wtFlags.clear();startWalkthrough();};
-document.getElementById('wt-back').onclick=()=>{if(wtPath.length>1){wtPath.pop();wtCollectFlags();showWtNode(wtPath[wtPath.length-1]);}};
-function startWalkthrough(){if(!nodes.length)return;const pm={};nodes.forEach(n=>pm[n.id]=[]);edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e.from);});const roots=nodes.filter(n=>pm[n.id].length===0);if(!roots.length)roots.push(nodes[0]);if(wtPath.length===0){wtFlags.clear();if(roots.length===1){wtPath=[roots[0].id];showWtNode(roots[0].id);}else showWtRootChoice(roots);}else{wtCollectFlags();showWtNode(wtPath[wtPath.length-1]);}document.getElementById('wt-overlay').classList.add('show');}
+document.getElementById('wt-back').onclick=()=>{if(wtPath.length>1){wtPath.pop();wtCollectState();showWtNode(wtPath[wtPath.length-1]);}};
+function startWalkthrough(){if(!nodes.length)return;const pm={};nodes.forEach(n=>pm[n.id]=[]);edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e.from);});const roots=nodes.filter(n=>pm[n.id].length===0);if(!roots.length)roots.push(nodes[0]);if(wtPath.length===0){wtFlags.clear();if(roots.length===1){wtPath=[roots[0].id];showWtNode(roots[0].id);}else showWtRootChoice(roots);}else{wtCollectState();showWtNode(wtPath[wtPath.length-1]);}document.getElementById('wt-overlay').classList.add('show');}
 function endWalkthrough(){document.getElementById('wt-overlay').classList.remove('show');}
-function showWtRootChoice(roots){document.getElementById('wt-step').textContent='选择起点';document.getElementById('wt-cat-bar').style.background='#45475a';document.getElementById('wt-card').innerHTML='<div class="wt-text">这个故事有多个起点，请选择一个开始：</div>';const ch=document.getElementById('wt-choices');ch.innerHTML='';roots.forEach(r=>{const b=document.createElement('div');b.className='wt-choice';b.innerHTML=`<div class="wt-choice-text">${escHtml(r.text||'(空)')}</div>`;b.onclick=()=>{wtPath=[r.id];wtCollectFlags();showWtNode(r.id);};ch.appendChild(b);});}
+function showWtRootChoice(roots){document.getElementById('wt-step').textContent='选择起点';document.getElementById('wt-cat-bar').style.background='#45475a';document.getElementById('wt-card').innerHTML='<div class="wt-text">这个故事有多个起点，请选择一个开始：</div>';const ch=document.getElementById('wt-choices');ch.innerHTML='';roots.forEach(r=>{const b=document.createElement('div');b.className='wt-choice';b.innerHTML=`<div class="wt-choice-text">${escHtml(r.text||'(空)')}</div>`;b.onclick=()=>{wtPath=[r.id];wtCollectState();showWtNode(r.id);};ch.appendChild(b);});}
 function showWtNode(nid){
   const node=nodes.find(n=>n.id===nid);if(!node)return;
   if(node.setFlags)node.setFlags.forEach(f=>wtFlags.add(f));
+  applyVarMods(wtVars,node);
   const cat=CATS[node.cat]||CATS.daily;
   document.getElementById('wt-step').textContent=`第 ${wtPath.length} 步`;
   document.getElementById('wt-cat-bar').style.background=cat.color;
@@ -530,6 +541,7 @@ function showWtNode(nid){
   let html=(summaryTxt?`<div style="font-size:12px;color:#6c7086;margin-bottom:8px">${escHtml(summaryTxt)}</div>`:'')+`<div class="wt-text">${escHtml(bodyTxt)}</div>`;
   if(node.chars.length){html+='<div class="wt-chars">';node.chars.forEach(c=>{html+=`<span style="background:${charColor(c)}">${escHtml(c)}</span>`;});html+='</div>';}
   if(wtFlags.size){html+='<div id="wt-flags">';wtFlags.forEach(f=>{html+=`<span>${escHtml(f)}</span>`;});html+='</div>';}
+  const vk=Object.keys(wtVars);if(vk.length){html+='<div id="wt-vars">';vk.forEach(k=>{html+=`<span>${escHtml(k)}: ${wtVars[k]}</span>`;});html+='</div>';}
   document.getElementById('wt-card').innerHTML=html;
   const oe=edges.filter(e=>e.from===nid),ch=document.getElementById('wt-choices');ch.innerHTML='';
   if(!oe.length){
@@ -579,8 +591,8 @@ function updateTitle() {
 
 function getFileData() {
   return JSON.stringify({version:2,
-    nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),
-    edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]})),
+    nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,varMods:n.varMods,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),
+    edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[],varConds:e.varConds||[]})),
     aiConfig:aiConfig
   },null,2);
 }
@@ -643,15 +655,15 @@ document.getElementById('btn-export').onclick = fileSaveAs;
 document.getElementById('btn-import').onclick = fileOpen;
 
 function loadData(data){
-  nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',body:n.body||'',notes:n.notes||'',chars:n.characters||[],setFlags:n.setFlags||[],aiInstructions:n.aiInstructions||'',cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));
-  edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||'',etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));
+  nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',body:n.body||'',notes:n.notes||'',chars:n.characters||[],setFlags:n.setFlags||[],varMods:n.varMods||[],aiInstructions:n.aiInstructions||'',cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));
+  edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||'',etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[],varConds:e.varConds||[]}));
   if(data.aiConfig)aiConfig={...aiConfig,...data.aiConfig,generationParams:{...aiConfig.generationParams,...(data.aiConfig.generationParams||{})},characterDefs:{...(data.aiConfig.characterDefs||{})}};
   nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();
 }
 
 // --- Persistence ---
 const SAVE_KEY='story-tree-data';
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]})),view:{pan,zoom},aiConfig:aiConfig}));}catch(e){}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,varMods:n.varMods,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[],varConds:e.varConds||[]})),view:{pan,zoom},aiConfig:aiConfig}));}catch(e){}}
 function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;const data=JSON.parse(raw);loadData(data);if(data.view){pan=data.view.pan||{x:0,y:0};zoom=data.view.zoom||1;document.getElementById('zoom-ind').textContent=Math.round(zoom*100)+'%';}}catch(e){}}
 
 // --- Init ---
@@ -883,6 +895,105 @@ async function generatePresBranches(nid,node){
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('pres-overlay').classList.contains('show'))return;
   if(e.key==='Escape')presClose();
+});
+
+// --- Variable Editors ---
+function renderNodeVars(){
+  const el=document.getElementById('nd-vars');el.innerHTML='';if(!selNode)return;
+  (selNode.varMods||[]).forEach((v,i)=>{const t=document.createElement('span');t.className='var-tag';t.innerHTML='<span class="var-mod">'+escHtml(v.name)+' '+escHtml(v.op+v.val)+'</span> <span class="fx" data-i="'+i+'">x</span>';el.appendChild(t);});
+  el.querySelectorAll('.fx').forEach(x=>{x.onclick=()=>{pushHistory();selNode.varMods.splice(+x.dataset.i,1);renderNodeVars();save();};});
+}
+document.getElementById('nd-var-add').onclick=addNodeVar;
+function addNodeVar(){
+  const nameIn=document.getElementById('nd-var-name'),valIn=document.getElementById('nd-var-val');
+  const name=nameIn.value.trim(),raw=valIn.value.trim();if(!name||!raw||!selNode)return;
+  let op='=',val=0;
+  if(raw.startsWith('+')) {op='+';val=parseFloat(raw.slice(1));}
+  else if(raw.startsWith('-')) {op='-';val=parseFloat(raw.slice(1));}
+  else {op='=';val=parseFloat(raw.replace(/^=/,''));}
+  if(isNaN(val))return;
+  pushHistory();if(!selNode.varMods)selNode.varMods=[];
+  selNode.varMods.push({name,op,val});
+  nameIn.value='';valIn.value='';renderNodeVars();save();
+}
+
+function renderEdgeVarConds(){
+  const el=document.getElementById('ed-var-conds');el.innerHTML='';if(!selEdge)return;
+  (selEdge.varConds||[]).forEach((c,i)=>{const t=document.createElement('span');t.className='var-tag var-cond';t.innerHTML=escHtml(c.name)+escHtml(c.op)+escHtml(c.val)+' <span class="fx" data-i="'+i+'">x</span>';el.appendChild(t);});
+  el.querySelectorAll('.fx').forEach(x=>{x.onclick=()=>{pushHistory();selEdge.varConds.splice(+x.dataset.i,1);renderEdgeVarConds();save();};});
+}
+document.getElementById('ed-vc-add').onclick=function(){
+  const inp=document.getElementById('ed-vc-in'),raw=inp.value.trim();if(!raw||!selEdge)return;
+  const m=raw.match(/^([^<>=!]+)\s*([><=!]+)\s*(.+)$/);if(!m)return;
+  pushHistory();if(!selEdge.varConds)selEdge.varConds=[];
+  selEdge.varConds.push({name:m[1].trim(),op:m[2],val:parseFloat(m[3])});
+  inp.value='';renderEdgeVarConds();save();
+};
+document.getElementById('ed-vc-in').onkeydown=function(e){if(e.key==='Enter')document.getElementById('ed-vc-add').click();};
+
+// --- Variable engine ---
+function applyVarMods(varState, node) {
+  (node.varMods||[]).forEach(m=>{
+    const cur=varState[m.name]||0;
+    if(m.op==='+')varState[m.name]=cur+m.val;
+    else if(m.op==='-')varState[m.name]=cur-m.val;
+    else varState[m.name]=m.val;
+  });
+}
+function checkVarConds(varState, edge) {
+  return (edge.varConds||[]).every(c=>{
+    const v=varState[c.name]||0;
+    if(c.op==='>')return v>c.val;if(c.op==='>=')return v>=c.val;
+    if(c.op==='<')return v<c.val;if(c.op==='<=')return v<=c.val;
+    if(c.op==='=='||c.op==='=')return v===c.val;
+    if(c.op==='!='||c.op==='!==')return v!==c.val;
+    return true;
+  });
+}
+
+// --- Markdown Export ---
+document.getElementById('btn-export-md').onclick=exportMarkdown;
+async function exportMarkdown(){
+  if(!nodes.length)return;
+  const cm={},pm={};nodes.forEach(n=>{cm[n.id]=[];pm[n.id]=[];});
+  edges.forEach(e=>{if(cm[e.from])cm[e.from].push(e);if(pm[e.to])pm[e.to].push(e.from);});
+  const roots=nodes.filter(n=>pm[n.id].length===0);if(!roots.length)roots.push(nodes[0]);
+  let md='# Story Tree Outline\n\n';
+  const visited=new Set();
+  function walk(nid,depth){
+    if(visited.has(nid))return;visited.add(nid);
+    const n=nodes.find(x=>x.id===nid);if(!n)return;
+    const indent='  '.repeat(depth);const cat=(CATS[n.cat]||CATS.daily).name;
+    md+=indent+'- **['+cat+']** '+( n.text||'(空)')+'\n';
+    if(n.body)md+=indent+'  > '+n.body.split('\n').join('\n'+indent+'  > ')+'\n';
+    if(n.chars.length)md+=indent+'  角色: '+n.chars.join(', ')+'\n';
+    if(n.setFlags&&n.setFlags.length)md+=indent+'  标记: '+n.setFlags.join(', ')+'\n';
+    if(n.varMods&&n.varMods.length)md+=indent+'  变量: '+n.varMods.map(v=>v.name+v.op+v.val).join(', ')+'\n';
+    const oe=cm[nid]||[];
+    oe.forEach(e=>{
+      let info=e.label?'('+e.label+') ':'';info+=e.probability+'%';
+      if(e.reqFlags&&e.reqFlags.length)info+=' [需要:'+e.reqFlags.join(',')+']';
+      if(e.varConds&&e.varConds.length)info+=' [条件:'+e.varConds.map(c=>c.name+c.op+c.val).join(',')+']';
+      md+=indent+'  --> '+info+'\n';
+      walk(e.to,depth+1);
+    });
+  }
+  roots.forEach(r=>walk(r.id,0));
+  md+='\n---\nGenerated by Story Tree\n';
+  if(isTauri){try{const p=await window.__TAURI__.dialog.save({filters:[{name:'Markdown',extensions:['md']}],defaultPath:'story-outline.md'});if(p)await window.__TAURI__.fs.writeTextFile(p,md);}catch(e){console.error(e);}}
+  else{const blob=new Blob([md],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='story-outline.md';a.click();URL.revokeObjectURL(a.href);}
+}
+
+// --- Drag & Drop File Open ---
+document.addEventListener('dragover',e=>{e.preventDefault();document.getElementById('drop-overlay').classList.add('show');});
+document.addEventListener('dragleave',e=>{if(e.relatedTarget===null)document.getElementById('drop-overlay').classList.remove('show');});
+document.addEventListener('drop',async e=>{
+  e.preventDefault();document.getElementById('drop-overlay').classList.remove('show');
+  const file=e.dataTransfer.files[0];if(!file||!file.name.endsWith('.json'))return;
+  if(dirty&&!confirm('当前文件未保存，确定打开吗？'))return;
+  const reader=new FileReader();
+  reader.onload=ev=>{try{loadData(JSON.parse(ev.target.result));currentFile=file.path||file.name;pushHistory();markClean();fitView();}catch(err){alert('JSON 解析失败: '+err.message);}};
+  reader.readAsText(file);
 });
 
 // --- Minimap ---
