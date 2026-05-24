@@ -159,6 +159,24 @@ input[type="file"]{display:none}
 .var-cond{background:#f9e2af;color:#1e1e2e}
 #wt-vars,#pres-vars{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
 #wt-vars span,#pres-vars span{padding:2px 8px;border-radius:10px;font-size:11px;background:#74c7ec;color:#1e1e2e}
+#world-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;justify-content:center;align-items:center}
+#world-panel.show{display:flex}
+#world-inner{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto}
+#world-inner h3{margin-bottom:16px;font-size:16px}
+#world-inner label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
+#world-inner input,#world-inner textarea,#world-inner select{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical}
+#world-inner input:focus,#world-inner textarea:focus,#world-inner select:focus{border-color:var(--sel)}
+#world-inner select{appearance:auto}
+.world-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
+.wp-card{background:var(--input);border:1px solid var(--border);border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;transition:all .15s;font-size:12px}
+.wp-card:hover,.wp-card.active{border-color:var(--sel);background:var(--surface2)}
+.wp-card .wp-name{font-weight:600;margin-bottom:2px}
+.wp-card .wp-desc{font-size:10px;color:var(--sub)}
+.faction-item{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:8px;margin:6px 0;display:flex;gap:8px;align-items:start}
+.faction-item input{flex:1}
+.faction-item button{background:none;border:none;color:#f38ba8;cursor:pointer;font-size:14px}
+#world-badge{display:none;font-size:11px;color:var(--sub);background:var(--input);padding:2px 8px;border-radius:10px;margin-right:4px;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#world-badge.show{display:inline-block}
 #tpl-panel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:25;min-width:360px}
 #tpl-panel.show{display:block}
 #tpl-panel h4{margin-bottom:12px;font-size:14px}
@@ -228,6 +246,8 @@ input[type="file"]{display:none}
       <button id="btn-export-md">大纲</button>
     </div>
     <div class="spacer"></div>
+    <span id="world-badge" title="点击编辑世界观"></span>
+    <button id="btn-world">世界观</button>
     <button id="btn-theme">浅色</button>
     <button id="btn-settings" title="API">设置</button>
     <span id="zoom-ind">100%</span>
@@ -252,6 +272,34 @@ input[type="file"]{display:none}
       <div id="p-edge" style="display:none"><h3>连线</h3><label>类型</label><div class="etype-btns" id="ed-type"></div><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><label>需要标记 (全部满足才显示)</label><div class="tag-list" id="ed-req-flags"></div><div class="flag-add"><input id="ed-req-in" type="text" placeholder="标记名..."><button id="ed-req-add">+</button></div><label>排除标记 (有则隐藏)</label><div class="tag-list" id="ed-not-flags"></div><div class="flag-add"><input id="ed-not-in" type="text" placeholder="标记名..."><button id="ed-not-add">+</button></div><label>变量条件 (如: HP>50)</label><div class="tag-list" id="ed-var-conds"></div><div class="flag-add"><input id="ed-vc-in" type="text" placeholder="变量名>值 或 变量名<值"><button id="ed-vc-add">+</button></div><button class="btn-danger" id="ed-del">删除连线</button></div>
     </aside>
   </div>
+</div>
+<div id="world-panel">
+<div id="world-inner">
+  <h3>世界观设定</h3>
+  <label>选择预设 (或自定义)</label>
+  <div class="world-presets" id="wp-grid"></div>
+  <label>世界名称</label>
+  <input id="w-name" type="text" placeholder="给你的世界起个名字...">
+  <label>类型</label>
+  <select id="w-genre"><option value="fantasy">奇幻</option><option value="scifi">科幻</option><option value="cyberpunk">赛博朋克</option><option value="xianxia">仙侠</option><option value="postapoc">末日废土</option><option value="historical">历史</option><option value="modern">现代</option><option value="horror">恐怖</option><option value="custom">自定义</option></select>
+  <label>时代与背景</label>
+  <textarea id="w-era" rows="2" placeholder="什么时代？什么地方？社会形态？"></textarea>
+  <label>力量体系 (魔法/科技/异能)</label>
+  <textarea id="w-power" rows="2" placeholder="这个世界的力量来源是什么？有什么规则和限制？"></textarea>
+  <label>核心矛盾</label>
+  <textarea id="w-conflict" rows="2" placeholder="推动故事的根本矛盾是什么？"></textarea>
+  <label>调性与风格</label>
+  <textarea id="w-tone" rows="1" placeholder="黑暗写实？轻松冒险？悬疑烧脑？"></textarea>
+  <label>势力/阵营</label>
+  <div id="w-factions"></div>
+  <button onclick="addFaction()" style="background:var(--sel);color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;margin-top:4px">+ 添加势力</button>
+  <label>世界规则 / 补充设定</label>
+  <textarea id="w-rules" rows="3" placeholder="其他需要遵守的世界观规则..."></textarea>
+  <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+    <button onclick="closeWorld()" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 16px;cursor:pointer;font-size:13px">取消</button>
+    <button onclick="saveWorld()" style="background:var(--sel);color:#fff;border:1px solid var(--sel);border-radius:6px;padding:6px 16px;cursor:pointer;font-size:13px">保存世界观</button>
+  </div>
+</div>
 </div>
 <div id="drop-overlay">松开以打开文件</div>
 <div id="pres-overlay"><div id="pres-inner"><div id="pres-cat"></div><div id="pres-text"></div><div id="pres-chars"></div><div id="pres-choices"></div></div><div id="pres-footer"><button onclick="presBack()">后退</button><button onclick="presRestart()">重来</button><button onclick="presClose()">退出 (Esc)</button></div><div id="pres-step"></div></div>
@@ -655,10 +703,12 @@ function fileNew() {
   if (dirty) { if (!confirm('当前文件未保存，确定要新建吗？')) return; }
   nodes = []; edges = []; nid = 1; eid = 1; currentFile = null;
   collapsed.clear(); multiSel.clear(); charFilter.clear();
+  aiConfig={systemPrompt:'',worldRules:'',toneGuide:'',characterDefs:{},generationParams:{temperature:0.9,branchCount:3,continueAtLeaves:true}};
   select(null, null); save(); pushHistory(); markClean();
   pan = {x: cvs.clientWidth/2, y: 80}; zoom = 1;
   document.getElementById('zoom-ind').textContent = '100%';
-  render(); updateBatch();
+  render(); updateBatch(); updateWorldBadge();
+  openWorld();
 }
 
 document.getElementById('btn-new').onclick = fileNew;
@@ -681,7 +731,7 @@ function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;cons
 // --- Init ---
 function resize(){const dpr=window.devicePixelRatio||1,r=wrap.getBoundingClientRect();cvs.width=r.width*dpr;cvs.height=r.height*dpr;cvs.style.width=r.width+'px';cvs.style.height=r.height+'px';render();}
 window.addEventListener('resize',resize);
-load();resize();pushHistory();markClean();
+load();resize();pushHistory();markClean();updateWorldBadge();
 if(!nodes.length){pan.x=cvs.clientWidth/2;pan.y=80;render();}
 updateTitle();
 
@@ -995,6 +1045,111 @@ async function exportMarkdown(){
   if(isTauri){try{const p=await window.__TAURI__.dialog.save({filters:[{name:'Markdown',extensions:['md']}],defaultPath:'story-outline.md'});if(p)await window.__TAURI__.fs.writeTextFile(p,md);}catch(e){console.error(e);}}
   else{const blob=new Blob([md],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='story-outline.md';a.click();URL.revokeObjectURL(a.href);}
 }
+
+// --- World System ---
+const WORLD_PRESETS=[
+  {id:'fantasy',name:'经典奇幻',desc:'剑与魔法',genre:'fantasy',era:'中世纪风格的大陆，王国与公会并存',power:'魔法分为元素、治愈、暗黑三系，需要天赋和修炼',conflict:'魔族入侵与人类内部的权力斗争',tone:'史诗冒险',factions:[{name:'人类王国',desc:'以骑士和法师为主力的联盟'},{name:'魔族',desc:'被误解的异族，有自己的文明'},{name:'冒险者公会',desc:'独立于王权的自由势力'}]},
+  {id:'scifi',name:'星际科幻',desc:'太空歌剧',genre:'scifi',era:'人类已殖民银河系多个星区，FTL航行成熟',power:'量子科技、AI辅助、基因改造，无超自然力量',conflict:'殖民星独立运动与联邦控制的对抗',tone:'硬科幻，政治惊悚',factions:[{name:'地球联邦',desc:'老牌霸权，资源枯竭但军力最强'},{name:'外环联盟',desc:'殖民星联合体，追求自治'},{name:'合成人议会',desc:'AI/合成人争取公民权'}]},
+  {id:'cyberpunk',name:'赛博朋克',desc:'高科技低生活',genre:'cyberpunk',era:'2087年，巨型企业取代政府，贫富极度分化',power:'义体改造、脑机接口、黑客入侵、纳米技术',conflict:'底层人对抗企业垄断，人性与机械的边界',tone:'阴暗潮湿，霓虹灯下的绝望与反抗',factions:[{name:'企业联合',desc:'控制城市的五大巨企'},{name:'地下社区',desc:'脱离系统的自由民'},{name:'网络游魂',desc:'数字化意识的存在'}]},
+  {id:'xianxia',name:'仙侠',desc:'修仙问道',genre:'xianxia',era:'苍穹大陆，修仙宗门林立，凡俗与仙界并存',power:'灵气修炼，分炼气/筑基/金丹/元婴/化神，需悟道',conflict:'天道崩塌，仙魔大战将至，因果纠缠',tone:'东方玄幻，命运与自由意志的碰撞',factions:[{name:'正道联盟',desc:'以剑宗和丹宗为首'},{name:'魔道',desc:'走捷径修炼的离经叛道者'},{name:'散修',desc:'无宗门背景的独行者'}]},
+  {id:'postapoc',name:'末日废土',desc:'文明废墟',genre:'postapoc',era:'大灾变后30年，旧文明崩塌，幸存者在废墟中挣扎',power:'变异、旧科技遗物、辐射适应能力',conflict:'资源争夺、人性考验、文明重建还是彻底野蛮化',tone:'残酷写实，微光中的希望',factions:[{name:'避难所联邦',desc:'保存了部分旧世界秩序'},{name:'拾荒者',desc:'自由散漫的生存主义者'},{name:'变异部落',desc:'基因突变的新人类'}]},
+  {id:'horror',name:'克苏鲁',desc:'宇宙恐怖',genre:'horror',era:'1920年代或现代，表面正常的世界下潜伏着不可名状之物',power:'禁忌知识、古神低语、理智值，力量的代价是疯狂',conflict:'窥见真相的凡人试图阻止古神苏醒',tone:'压抑恐怖，越了解越绝望',factions:[{name:'调查员',desc:'追寻真相的普通人'},{name:'邪教',desc:'崇拜外神的狂信者'},{name:'古老存在',desc:'超越人类理解的实体'}]},
+  {id:'modern',name:'现代都市',desc:'当代背景',genre:'modern',era:'当代城市，现实世界的规则',power:'智慧、人脉、金钱、信息，没有超自然力量',conflict:'人际关系、社会阶层、个人成长',tone:'贴近生活，细腻真实',factions:[]},
+  {id:'blank',name:'空白',desc:'从零开始',genre:'custom',era:'',power:'',conflict:'',tone:'',factions:[]},
+];
+
+function openWorld(){
+  const w=aiConfig.world||{};
+  document.getElementById('w-name').value=w.name||'';
+  document.getElementById('w-genre').value=w.genre||'fantasy';
+  document.getElementById('w-era').value=w.era||'';
+  document.getElementById('w-power').value=w.power||'';
+  document.getElementById('w-conflict').value=w.conflict||'';
+  document.getElementById('w-tone').value=w.tone||'';
+  document.getElementById('w-rules').value=w.rules||'';
+  renderFactions(w.factions||[]);
+  renderWorldPresets(null);
+  document.getElementById('world-panel').classList.add('show');
+}
+function closeWorld(){document.getElementById('world-panel').classList.remove('show');}
+window.closeWorld=closeWorld;
+
+function renderWorldPresets(activeId){
+  const grid=document.getElementById('wp-grid');grid.innerHTML='';
+  WORLD_PRESETS.forEach(p=>{
+    const d=document.createElement('div');d.className='wp-card'+(activeId===p.id?' active':'');
+    d.innerHTML=`<div class="wp-name">${p.name}</div><div class="wp-desc">${p.desc}</div>`;
+    d.onclick=()=>{
+      document.getElementById('w-name').value=p.name;
+      document.getElementById('w-genre').value=p.genre;
+      document.getElementById('w-era').value=p.era;
+      document.getElementById('w-power').value=p.power;
+      document.getElementById('w-conflict').value=p.conflict;
+      document.getElementById('w-tone').value=p.tone;
+      renderFactions(p.factions.map(f=>({...f})));
+      renderWorldPresets(p.id);
+    };
+    grid.appendChild(d);
+  });
+}
+
+let _worldFactions=[];
+function renderFactions(factions){
+  if(factions)_worldFactions=factions;
+  const el=document.getElementById('w-factions');el.innerHTML='';
+  _worldFactions.forEach((f,i)=>{
+    const d=document.createElement('div');d.className='faction-item';
+    d.innerHTML=`<div style="flex:1"><input value="${escHtml(f.name)}" placeholder="势力名" data-i="${i}" data-f="name" style="margin-bottom:4px"><input value="${escHtml(f.desc)}" placeholder="描述" data-i="${i}" data-f="desc"></div><button onclick="_worldFactions.splice(${i},1);renderFactions()">x</button>`;
+    el.appendChild(d);
+  });
+  el.querySelectorAll('input[data-i]').forEach(inp=>{
+    inp.oninput=()=>{_worldFactions[+inp.dataset.i][inp.dataset.f]=inp.value;};
+  });
+}
+function addFaction(){_worldFactions.push({name:'',desc:''});renderFactions();}
+window.addFaction=addFaction;
+
+function saveWorld(){
+  const w={
+    name:document.getElementById('w-name').value.trim(),
+    genre:document.getElementById('w-genre').value,
+    era:document.getElementById('w-era').value.trim(),
+    power:document.getElementById('w-power').value.trim(),
+    conflict:document.getElementById('w-conflict').value.trim(),
+    tone:document.getElementById('w-tone').value.trim(),
+    rules:document.getElementById('w-rules').value.trim(),
+    factions:_worldFactions.filter(f=>f.name)
+  };
+  aiConfig.world=w;
+  // Sync to AI config fields
+  const parts=[];
+  if(w.era)parts.push('Era/Setting: '+w.era);
+  if(w.power)parts.push('Power System: '+w.power);
+  if(w.rules)parts.push('Rules: '+w.rules);
+  if(w.factions.length)parts.push('Factions:\n'+w.factions.map(f=>'- '+f.name+': '+f.desc).join('\n'));
+  aiConfig.worldRules=parts.join('\n\n');
+  if(w.tone)aiConfig.toneGuide=w.tone;
+  // Auto-add faction characters to characterDefs
+  w.factions.forEach(f=>{
+    if(f.name&&!aiConfig.characterDefs[f.name]){
+      aiConfig.characterDefs[f.name]={personality:'',background:f.desc,voice:''};
+    }
+  });
+  save();
+  updateWorldBadge();
+  closeWorld();
+}
+window.saveWorld=saveWorld;
+
+function updateWorldBadge(){
+  const badge=document.getElementById('world-badge');
+  const w=aiConfig.world;
+  if(w&&w.name){badge.textContent=w.name;badge.classList.add('show');}
+  else badge.classList.remove('show');
+}
+
+document.getElementById('btn-world').onclick=openWorld;
+document.getElementById('world-badge').onclick=openWorld;
 
 // --- Templates ---
 const TEMPLATES=[
