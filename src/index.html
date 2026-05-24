@@ -121,6 +121,22 @@ input[type="file"]{display:none}
 #batch-bar button{background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px}
 #batch-bar button:hover{border-color:var(--sel)}
 #batch-bar .bd{background:var(--input);color:#f38ba8;border-color:#f38ba8}
+#minimap{position:absolute;bottom:12px;right:12px;width:180px;height:120px;background:var(--toolbar);border:1px solid var(--border);border-radius:8px;z-index:14;overflow:hidden;cursor:pointer}
+#minimap canvas{width:100%;height:100%;display:block}
+#check-panel{display:none;position:absolute;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;z-index:15;max-width:320px;max-height:60vh;overflow-y:auto;min-width:220px}
+#check-panel.show{display:block}
+#check-panel h4{font-size:13px;margin-bottom:10px;color:var(--sub)}
+.chk-item{padding:6px 8px;margin:3px 0;border-radius:6px;font-size:12px;cursor:pointer;border-left:3px solid;transition:background .12s}
+.chk-item:hover{background:var(--input)}
+.chk-warn{border-color:#f9e2af;color:#f9e2af}
+.chk-err{border-color:#f38ba8;color:#f38ba8}
+.chk-ok{border-color:#a6e3a1;color:#a6e3a1}
+.chk-info{border-color:#89b4fa;color:#89b4fa}
+#recent-menu{display:none;position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:25;min-width:240px;max-width:400px}
+#recent-menu.show{display:block}
+#recent-menu .rc-item{padding:6px 12px;cursor:pointer;border-radius:4px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#recent-menu .rc-item:hover{background:var(--input)}
+#recent-menu .rc-empty{padding:8px 12px;color:var(--sub);font-size:12px}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--toolbar)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -148,11 +164,13 @@ input[type="file"]{display:none}
       <button id="btn-walk">走读</button>
       <button id="btn-charfilter">角色</button>
       <button id="btn-stats">统计</button>
+      <button id="btn-check">检查</button>
     </div>
     <div class="sep"></div>
     <div class="group">
       <button id="btn-new" title="Ctrl+N">新建</button>
       <button id="btn-import" title="Ctrl+O">打开</button>
+      <button id="btn-recent">最近</button>
       <button id="btn-save" title="Ctrl+S">保存</button>
       <button id="btn-export" title="Ctrl+Shift+S">另存为</button>
       <button id="btn-export-img">图片</button>
@@ -171,6 +189,9 @@ input[type="file"]{display:none}
       <div id="char-filter"><h4>角色筛选</h4><div id="cf-list"></div><span class="cf-clear" id="cf-clear">清除筛选</span></div>
       <div id="search-bar"><input id="s-input" type="text" placeholder="搜索文本或角色..."><span class="s-info" id="s-info"></span><button id="s-prev">&#9650;</button><button id="s-next">&#9660;</button><button id="s-close">x</button></div>
       <div id="stats-panel"></div>
+      <div id="minimap"><canvas id="mm-cvs"></canvas></div>
+      <div id="check-panel"></div>
+      <div id="recent-menu"></div>
       <div id="batch-bar"><span id="batch-count"></span><button onclick="batchCat('daily')">日常</button><button onclick="batchCat('conflict')">冲突</button><button onclick="batchCat('turning')">转折</button><button onclick="batchCat('climax')">高潮</button><button onclick="batchCat('ending')">结局</button><button class="bd" onclick="batchDel()">删除</button><button onclick="clearMulti()">取消</button></div>
     </div>
     <aside id="panel">
@@ -607,6 +628,152 @@ setInterval(()=>{if(dirty&&currentFile&&isTauri)fileSave();},30000);
 // --- Close warning ---
 if(isTauri){try{window.__TAURI__.event.listen('tauri://close-requested',async()=>{if(dirty){const ok=await window.__TAURI__.dialog.confirm('有未保存的修改，确定退出吗？',{title:'故事树',kind:'warning'});if(!ok)return;}window.__TAURI__.window.getCurrentWindow().destroy();});}catch(e){}}
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+
+// --- Minimap ---
+const mmCvs=document.getElementById('mm-cvs');
+const mmCtx=mmCvs.getContext('2d');
+function renderMinimap(){
+  const dpr=window.devicePixelRatio||1;
+  const rect=mmCvs.parentElement.getBoundingClientRect();
+  mmCvs.width=rect.width*dpr;mmCvs.height=rect.height*dpr;
+  mmCtx.setTransform(dpr,0,0,dpr,0,0);
+  mmCtx.clearRect(0,0,rect.width,rect.height);
+  if(!nodes.length)return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  nodes.forEach(n=>{if(isHidden(n.id))return;minX=Math.min(minX,n.x-n.w/2);minY=Math.min(minY,n.y-n.h/2);maxX=Math.max(maxX,n.x+n.w/2);maxY=Math.max(maxY,n.y+n.h/2);});
+  if(!isFinite(minX))return;
+  const pad=20,bw=maxX-minX+pad*2,bh=maxY-minY+pad*2;
+  const sc=Math.min(rect.width/bw,rect.height/bh);
+  const ox=(rect.width-bw*sc)/2-minX*sc+pad*sc,oy=(rect.height-bh*sc)/2-minY*sc+pad*sc;
+  // edges
+  mmCtx.strokeStyle=isLight?'rgba(0,0,0,0.15)':'rgba(205,214,244,0.15)';mmCtx.lineWidth=1;
+  edges.forEach(e=>{if(!edgeVis(e))return;const fn=nodes.find(n=>n.id===e.from),tn=nodes.find(n=>n.id===e.to);if(!fn||!tn)return;mmCtx.beginPath();mmCtx.moveTo(fn.x*sc+ox,fn.y*sc+oy);mmCtx.lineTo(tn.x*sc+ox,tn.y*sc+oy);mmCtx.stroke();});
+  // nodes
+  nodes.forEach(n=>{if(isHidden(n.id))return;const col=(CATS[n.cat]||CATS.daily).color;mmCtx.fillStyle=col;mmCtx.fillRect(n.x*sc+ox-3,n.y*sc+oy-2,6,4);});
+  // viewport
+  const vx1=(-pan.x/zoom)*sc+ox,vy1=(-pan.y/zoom)*sc+oy;
+  const vw=cvs.clientWidth/zoom*sc,vh=cvs.clientHeight/zoom*sc;
+  mmCtx.strokeStyle=isLight?'#3b82f6':'#89b4fa';mmCtx.lineWidth=1.5;mmCtx.strokeRect(vx1,vy1,vw,vh);
+  // store for click mapping
+  mmCvs._mm={sc,ox,oy,minX,minY};
+}
+mmCvs.addEventListener('mousedown',e=>{
+  const r=mmCvs.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  if(!mmCvs._mm)return;
+  const{sc,ox,oy}=mmCvs._mm;
+  const wx=(mx-ox)/sc,wy=(my-oy)/sc;
+  pan.x=cvs.clientWidth/2-wx*zoom;pan.y=cvs.clientHeight/2-wy*zoom;
+  render();
+});
+const _origRender=render;
+render=function(){_origRender();renderMinimap();};
+
+// --- Recent Files ---
+const RC_KEY='story-tree-recent';
+function getRecent(){try{return JSON.parse(localStorage.getItem(RC_KEY))||[];}catch(e){return[];}}
+function addRecent(path){if(!path)return;let rc=getRecent();rc=rc.filter(p=>p!==path);rc.unshift(path);if(rc.length>8)rc.length=8;localStorage.setItem(RC_KEY,JSON.stringify(rc));}
+const _origMarkClean=markClean;
+markClean=function(){_origMarkClean();if(currentFile)addRecent(currentFile);};
+
+document.getElementById('btn-recent').onclick=function(ev){
+  const menu=document.getElementById('recent-menu');
+  if(menu.classList.contains('show')){menu.classList.remove('show');return;}
+  const rc=getRecent();
+  menu.innerHTML='';
+  if(!rc.length){menu.innerHTML='<div class="rc-empty">没有最近文件</div>';}
+  else rc.forEach(p=>{
+    const d=document.createElement('div');d.className='rc-item';
+    d.textContent=p.split(/[/\\]/).pop()+' - '+p;
+    d.title=p;
+    d.onclick=async()=>{
+      menu.classList.remove('show');
+      if(dirty&&!confirm('当前文件未保存，确定打开吗？'))return;
+      if(isTauri){try{const text=await window.__TAURI__.fs.readTextFile(p);loadData(JSON.parse(text));currentFile=p;pushHistory();markClean();fitView();}catch(e){alert('打开失败: '+e);}}
+    };
+    menu.appendChild(d);
+  });
+  const btn=this.getBoundingClientRect();
+  menu.style.left=btn.left+'px';menu.style.top=(btn.bottom+4)+'px';
+  menu.classList.add('show');
+};
+document.addEventListener('click',e=>{const m=document.getElementById('recent-menu');if(m.classList.contains('show')&&!m.contains(e.target)&&e.target.id!=='btn-recent')m.classList.remove('show');});
+
+// --- Consistency Check ---
+document.getElementById('btn-check').onclick=runCheck;
+function runCheck(){
+  const el=document.getElementById('check-panel');
+  if(el.classList.contains('show')&&!el.querySelector('.ai-status')){el.classList.remove('show');return;}
+  el.classList.add('show');
+  const issues=[];
+  if(!nodes.length){el.innerHTML='<h4>检查</h4><div class="chk-item chk-ok">空画布</div>';return;}
+  const cm={},pm={};
+  nodes.forEach(n=>{cm[n.id]=[];pm[n.id]=[];});
+  edges.forEach(e=>{if(cm[e.from])cm[e.from].push(e);if(pm[e.to])pm[e.to].push(e.from);});
+  // empty nodes
+  nodes.forEach(n=>{if(!n.text&&!n.body)issues.push({type:'warn',nid:n.id,msg:'空节点: #'+n.id});});
+  // probability sums
+  nodes.forEach(n=>{const oe=cm[n.id];if(oe.length<2)return;const sum=oe.reduce((s,e)=>s+e.probability,0);if(sum<80||sum>120)issues.push({type:'warn',nid:n.id,msg:`#${n.id} 分支概率和=${sum}% (建议~100%)`});});
+  // orphans
+  nodes.forEach(n=>{if(pm[n.id].length===0&&cm[n.id].length===0&&nodes.length>1)issues.push({type:'err',nid:n.id,msg:'孤立节点: #'+n.id+' "'+((n.text||'').slice(0,15))+'"'});});
+  // leaves not ending
+  nodes.forEach(n=>{if(cm[n.id].length===0&&n.cat!=='ending'&&pm[n.id].length>0)issues.push({type:'info',nid:n.id,msg:`#${n.id} 是终点但未标记为"结局"`});});
+  // no characters
+  nodes.forEach(n=>{if(!n.chars.length&&(n.text||n.body))issues.push({type:'info',nid:n.id,msg:`#${n.id} 没有角色标签`});});
+
+  let html='<h4>检查结果</h4>';
+  if(!issues.length)html+='<div class="chk-item chk-ok">没有发现问题</div>';
+  else{
+    html+=`<div style="font-size:11px;color:var(--sub);margin-bottom:8px">发现 ${issues.length} 个问题 (点击跳转)</div>`;
+    issues.forEach(iss=>{
+      html+=`<div class="chk-item chk-${iss.type}" data-nid="${iss.nid}">${escHtml(iss.msg)}</div>`;
+    });
+  }
+  if(apiCfg.endpoint&&apiCfg.key){
+    html+='<button class="btn-ai" id="btn-ai-check" style="margin-top:12px">AI 深度检查</button>';
+    html+='<div id="ai-check-res"></div>';
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('.chk-item[data-nid]').forEach(d=>{
+    d.onclick=()=>{const n=nodes.find(x=>x.id===+d.dataset.nid);if(n){pan.x=cvs.clientWidth/2-n.x*zoom;pan.y=cvs.clientHeight/2-n.y*zoom;select(n,null);render();}};
+  });
+  const aiBtn=document.getElementById('btn-ai-check');
+  if(aiBtn)aiBtn.onclick=runAICheck;
+}
+
+async function runAICheck(){
+  const btn=document.getElementById('btn-ai-check');
+  const res=document.getElementById('ai-check-res');
+  btn.disabled=true;btn.textContent='分析中...';
+  res.innerHTML='<div class="ai-status">AI 正在分析故事一致性...</div>';
+  const tc=buildTreeContext(null);
+  try{
+    const resp=await fetch(apiCfg.endpoint+'/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},
+      body:JSON.stringify({model:apiCfg.model,messages:[
+        {role:'system',content:'You are a story consistency analyst. Analyze the story tree for plot holes, contradictions, character inconsistencies, pacing issues, and dead-end branches. Respond in Chinese. Format as JSON array: [{"node_id":number,"severity":"error"|"warning"|"suggestion","message":"description"}]. No markdown fences.'},
+        {role:'user',content:'Analyze this story tree for consistency issues:\n\n'+tc}
+      ],temperature:0.3})
+    });
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    let content=data.choices[0].message.content.trim().replace(/^```json?\s*/i,'').replace(/```\s*$/,'').trim();
+    const findings=JSON.parse(content);
+    res.innerHTML='';
+    if(!findings.length){res.innerHTML='<div class="chk-item chk-ok" style="margin-top:8px">AI 未发现一致性问题</div>';return;}
+    findings.forEach(f=>{
+      const cls=f.severity==='error'?'chk-err':f.severity==='warning'?'chk-warn':'chk-info';
+      const d=document.createElement('div');
+      d.className='chk-item '+cls;
+      d.dataset.nid=f.node_id;
+      d.textContent=(f.severity==='error'?'[错误] ':f.severity==='warning'?'[警告] ':'[建议] ')+(f.message||'');
+      d.onclick=()=>{const n=nodes.find(x=>x.id===f.node_id);if(n){pan.x=cvs.clientWidth/2-n.x*zoom;pan.y=cvs.clientHeight/2-n.y*zoom;select(n,null);render();}};
+      res.appendChild(d);
+    });
+  }catch(err){res.innerHTML='<div class="ai-status" style="color:#f38ba8">错误: '+escHtml(err.message)+'</div>';}
+  btn.disabled=false;btn.textContent='AI 深度检查';
+}
 </script>
+</body>
+</html>
 </body>
 </html>
