@@ -167,7 +167,7 @@ input[type="file"]{display:none}
 #world-inner input,#world-inner textarea,#world-inner select{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical}
 #world-inner input:focus,#world-inner textarea:focus,#world-inner select:focus{border-color:var(--sel)}
 #world-inner select{appearance:auto}
-.world-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
+.world-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;max-height:200px;overflow-y:auto;padding:2px}
 .wp-card{background:var(--input);border:1px solid var(--border);border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;transition:all .15s;font-size:12px}
 .wp-card:hover,.wp-card.active{border-color:var(--sel);background:var(--surface2)}
 .wp-card .wp-name{font-weight:600;margin-bottom:2px}
@@ -1055,6 +1055,14 @@ const WORLD_PRESETS=[
   {id:'postapoc',name:'末日废土',desc:'文明废墟',genre:'postapoc',era:'大灾变后30年，旧文明崩塌，幸存者在废墟中挣扎',power:'变异、旧科技遗物、辐射适应能力',conflict:'资源争夺、人性考验、文明重建还是彻底野蛮化',tone:'残酷写实，微光中的希望',factions:[{name:'避难所联邦',desc:'保存了部分旧世界秩序'},{name:'拾荒者',desc:'自由散漫的生存主义者'},{name:'变异部落',desc:'基因突变的新人类'}]},
   {id:'horror',name:'克苏鲁',desc:'宇宙恐怖',genre:'horror',era:'1920年代或现代，表面正常的世界下潜伏着不可名状之物',power:'禁忌知识、古神低语、理智值，力量的代价是疯狂',conflict:'窥见真相的凡人试图阻止古神苏醒',tone:'压抑恐怖，越了解越绝望',factions:[{name:'调查员',desc:'追寻真相的普通人'},{name:'邪教',desc:'崇拜外神的狂信者'},{name:'古老存在',desc:'超越人类理解的实体'}]},
   {id:'modern',name:'现代都市',desc:'当代背景',genre:'modern',era:'当代城市，现实世界的规则',power:'智慧、人脉、金钱、信息，没有超自然力量',conflict:'人际关系、社会阶层、个人成长',tone:'贴近生活，细腻真实',factions:[]},
+  {id:'steampunk',name:'蒸汽朋克',desc:'齿轮与蒸汽',genre:'custom',era:'维多利亚风格的工业革命时代，蒸汽机驱动一切，飞艇穿梭云端',power:'蒸汽科技、发条机械、以太能量。炼金术处于科学与神秘的交界',conflict:'工人阶级觉醒与贵族-工业寡头的冲突，机械化对传统手艺的摧毁',tone:'复古浪漫与工业压迫并存，黄铜色的冒险',factions:[{name:'齿轮议会',desc:'掌控蒸汽核心技术的工业巨头联盟'},{name:'地下铁路',desc:'工人和发明家组成的反抗网络'},{name:'皇家学会',desc:'追求以太奥秘的学者和炼金术师'}]},
+  {id:'timeloop',name:'时间循环',desc:'无限轮回',genre:'custom',era:'现代或任意时代，某一天/某一段时间不断重复',power:'记忆跨循环保留，每次重来可以做出不同选择。循环的规则逐渐被发现',conflict:'找出循环的原因并打破它，同时面对无限重复带来的心理崩溃',tone:'悬疑烧脑，从绝望到顿悟，每次循环都有新发现',factions:[{name:'觉醒者',desc:'意识到循环的人，可能不止主角一个'},{name:'钥匙人物',desc:'每次循环中行为固定的关键NPC'},{name:'循环本身',desc:'像是有意识的存在，在考验什么'}]},
+  {id:'urbanmyth',name:'都市怪谈',desc:'现代超自然',genre:'horror',era:'当代大城市，表面繁华现代，暗处潜伏着不属于这个世界的东西',power:'都市传说成真、诅咒物品、灵异现象。规则：知道的越多越危险，传播即感染',conflict:'普通人卷入超自然事件，能否在保持理智的同时活下来',tone:'日常恐怖，白天一切正常，夜晚规则改变',factions:[{name:'收容局',desc:'秘密政府机构，控制超自然信息扩散'},{name:'怪谈猎人',desc:'民间调查超自然事件的松散组织'},{name:'都市传说',desc:'从集体潜意识中诞生的实体'}]},
+  {id:'mecha',name:'机甲战争',desc:'巨型机器人',genre:'scifi',era:'近未来，人类面临外星入侵或内战，巨型机甲是决定性武器',power:'机甲操控需要驾驶员神经同步，同步率越高越强但精神损伤越大',conflict:'年轻驾驶员被迫参战，军方的利用与个人的成长',tone:'热血战斗与反战反思交织，少年成长',factions:[{name:'地球防卫军',desc:'统合人类军力的组织，内部派系林立'},{name:'入侵者',desc:'目的不明的外星文明，可能不是纯粹的敌人'},{name:'和平派',desc:'主张与外星沟通而非战斗'}]},
+  {id:'isekai',name:'异世界穿越',desc:'穿越重生',genre:'fantasy',era:'主角从现代穿越到异世界，带着前世记忆和可能的金手指',power:'穿越者获得系统/技能/知识优势，但异世界有自己的力量体系需要融入',conflict:'穿越者如何在异世界生存、改变命运，以及面对"回不去"的现实',tone:'轻松冒险为主，夹杂对两个世界的反思',factions:[{name:'穿越者',desc:'可能不止一个人穿越来了'},{name:'本土势力',desc:'异世界原住民的王国/组织'},{name:'世界意志',desc:'似乎在刻意召唤穿越者的神秘力量'}]},
+  {id:'spy',name:'谍战风云',desc:'情报暗战',genre:'modern',era:'冷战时期或现代国际政治背景，间谍机构暗中角力',power:'情报网络、伪装术、心理操控、高科技监控。没有超能力，只有人心博弈',conflict:'忠诚与背叛、任务与良心、身份的迷失',tone:'高度紧张，信任是最稀缺的货币，谁都可能是双面间谍',factions:[{name:'我方机构',desc:'主角所属的情报组织'},{name:'对手机构',desc:'敌对阵营的情报部门'},{name:'第三方',desc:'不属于任何阵营的掮客和自由特工'}]},
+  {id:'ocean',name:'海洋世界',desc:'碧海传说',genre:'custom',era:'陆地已沉没或从未存在，文明建立在海上城市、船队和海底遗迹之上',power:'海洋生物共生、深海压力适应、潮汐能源、古代海底文明的遗留科技',conflict:'海平面持续上升，最后的高地争夺战；深海中有不应被唤醒的东西',tone:'自由辽阔与深海恐惧并存，冒险与探索',factions:[{name:'漂流城邦',desc:'建在巨型船队上的移动国家'},{name:'深潜者',desc:'能在深海活动的改造人群体'},{name:'守塔人',desc:'守护最后几座露出海面的灯塔'}]},
+  {id:'dreamworld',name:'梦境迷宫',desc:'意识世界',genre:'custom',era:'人类发现了进入他人梦境的技术，梦境成为新的战场和疆域',power:'梦境中想象力即战斗力，但梦境有自己的规则——越恐惧越弱，越清醒越容易被排斥',conflict:'梦境中的存在开始入侵现实，清醒与沉睡的边界模糊',tone:'超现实主义，逻辑扭曲，美丽与诡异交替',factions:[{name:'入梦者',desc:'受训进入他人梦境的专业人员'},{name:'梦核',desc:'梦境中自发形成的意识体'},{name:'不醒者',desc:'自愿留在梦中不再醒来的人'}]},
   {id:'blank',name:'空白',desc:'从零开始',genre:'custom',era:'',power:'',conflict:'',tone:'',factions:[]},
 ];
 
