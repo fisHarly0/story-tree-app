@@ -156,6 +156,7 @@ input[type="file"]{display:none}
       <button id="btn-save" title="Ctrl+S">保存</button>
       <button id="btn-export" title="Ctrl+Shift+S">另存为</button>
       <button id="btn-export-img">图片</button>
+      <button id="btn-export-play">可玩HTML</button>
     </div>
     <div class="spacer"></div>
     <button id="btn-theme">浅色</button>
@@ -174,7 +175,7 @@ input[type="file"]{display:none}
     </div>
     <aside id="panel">
       <div id="p-empty"><h3>故事树</h3><div class="help-block"><p>双击空白添加节点</p><p><kbd>Shift</kbd>+点击连线 / 从节点底部拖出连线</p><p><kbd>Alt</kbd>+拖拽框选多个节点</p><p>滚轮缩放 拖拽平移 <kbd>Ctrl+F</kbd> 搜索</p><p><kbd>Del</kbd> 删除 <kbd>Ctrl+Z</kbd> 撤销</p><p><kbd>Ctrl+S</kbd> 保存 <kbd>Ctrl+O</kbd> 打开</p></div></div>
-      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>情节描述</label><textarea id="nd-text" rows="4" placeholder="描述这个情节..."></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
+      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>摘要 (画布显示)</label><textarea id="nd-text" rows="2" placeholder="简短概括..."></textarea><label>正文</label><textarea id="nd-body" rows="6" placeholder="完整场景描写、对话、细节..."></textarea><label>备注</label><textarea id="nd-notes" rows="2" placeholder="创作备忘、待修改..." style="font-style:italic;opacity:.8"></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
       <div id="p-edge" style="display:none"><h3>连线</h3><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><button class="btn-danger" id="ed-del">删除连线</button></div>
     </aside>
   </div>
@@ -224,9 +225,9 @@ document.getElementById('btn-theme').onclick=()=>{isLight=!isLight;T=isLight?LIG
 (function(){const t=localStorage.getItem('st-theme');if(t==='light'){isLight=true;T=LIGHT;document.body.classList.add('light');document.getElementById('btn-theme').textContent='深色';}})();
 
 // --- History ---
-function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,chars:[...n.chars],cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}))});}
+function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,chars:[...n.chars],cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}))});}
 function pushHistory(){const snap=serializeState();if(historyIdx>=0&&history[historyIdx]===snap)return;history.length=historyIdx+1;history.push(snap);if(history.length>MAX_HIST){history.shift();historyIdx--;}historyIdx=history.length-1;updateUndoButtons();}
-function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,chars:n.chars||[],cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
+function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,body:n.body||'',notes:n.notes||'',chars:n.chars||[],cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
 function undo(){if(historyIdx<=0)return;historyIdx--;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function redo(){if(historyIdx>=history.length-1)return;historyIdx++;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function updateUndoButtons(){document.getElementById('btn-undo').disabled=historyIdx<=0;document.getElementById('btn-redo').disabled=historyIdx>=history.length-1;}
@@ -255,7 +256,7 @@ function bezAt(t,p0,p1,p2,p3){const m=1-t;return m*m*m*p0+3*m*m*t*p1+3*m*t*t*p2+
 
 function drawEdge(e,exp){if(!exp&&!edgeVis(e))return;const p=edgePoints(e);if(!p)return;const dim=!exp&&charFilter.size>0&&!edgeVis(e),sel=!exp&&e===selEdge,prob=e.probability,col=sel?T.text==='#cdd6f4'?'#89b4fa':'#3b82f6':probColor(prob),w=sel?3:1.5+prob/100*1.5;ctx.globalAlpha=dim?.12:1;ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(p.x1,p.y1);ctx.bezierCurveTo(p.cx1,p.cy1,p.cx2,p.cy2,p.x2,p.y2);ctx.stroke();const angle=Math.atan2(p.y2-p.cy2,p.x2-p.cx2);ctx.fillStyle=col;ctx.save();ctx.translate(p.x2,p.y2);ctx.rotate(angle);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-8,-3.2);ctx.lineTo(-8,3.2);ctx.closePath();ctx.fill();ctx.restore();const mx=bezAt(.5,p.x1,p.cx1,p.cx2,p.x2),my=bezAt(.5,p.y1,p.cy1,p.cy2,p.y2),labels=[];if(prob>=0)labels.push(prob+'%');if(e.label)labels.push(e.label);if(labels.length){const txt=labels.join(' ');ctx.font='bold 11px "Segoe UI",sans-serif';const tw=ctx.measureText(txt).width;ctx.fillStyle=T.bg;roundRect(mx-tw/2-6,my-9,tw+12,18,4);ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,mx,my);}ctx.globalAlpha=1;}
 
-function drawNode(node,exp){if(!exp&&isHidden(node.id))return;const x=node.x-node.w/2,y=node.y-node.h/2,dim=!exp&&charFilter.size>0&&!node.chars.some(c=>charFilter.has(c)),sel=!exp&&(node===selNode||multiSel.has(node.id)),isConn=!exp&&mode==='connect'&&connFrom===node,catCol=(CATS[node.cat]||CATS.daily).color;ctx.globalAlpha=dim?.12:1;ctx.save();ctx.shadowColor='rgba(0,0,0,0.25)';ctx.shadowBlur=sel?12:6;ctx.shadowOffsetY=2;ctx.fillStyle=sel?T.surface2:T.surface;roundRect(x,y,node.w,node.h,8);ctx.fill();ctx.shadowColor='transparent';ctx.strokeStyle=isConn?'#f9e2af':sel?'var(--sel)':'transparent';if(sel){const cs=getComputedStyle(document.documentElement).getPropertyValue('--sel').trim();ctx.strokeStyle=isConn?'#f9e2af':cs;}else ctx.strokeStyle=T.border;ctx.lineWidth=sel||isConn?2:1;ctx.stroke();ctx.restore();ctx.fillStyle=catCol;roundRect(x+2,y+2,node.w-4,4,2);ctx.fill();ctx.fillStyle=T.text;ctx.font='14px "Segoe UI","Microsoft YaHei",sans-serif';ctx.textAlign='left';ctx.textBaseline='top';const lines=node._lines||['(空)'];for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],x+PAD,y+PAD+2+i*LINE_H);if(node.chars.length){ctx.font='11px "Segoe UI",sans-serif';let tx=x+PAD;const ty=y+PAD+2+lines.length*LINE_H+TAG_PAD;for(const ch of node.chars){const tw=ctx.measureText(ch).width+12;ctx.fillStyle=charColor(ch);roundRect(tx,ty,tw,TAG_H-2,10);ctx.fill();ctx.fillStyle=T.tagText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(ch,tx+6,ty+TAG_H/2-1);tx+=tw+4;}}if(!exp&&collapsed.has(node.id)){const cc=getDesc(node.id).size;if(cc>0){const bx=node.x+node.w/2-8,by=node.y+node.h/2-8;ctx.fillStyle='#f9e2af';ctx.beginPath();ctx.arc(bx,by,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1e1e2e';ctx.font='bold 10px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+'+cc,bx,by);}}if(!exp&&searchMatches.length>0&&searchMatches.includes(node.id)){const cur=searchIdx>=0&&searchMatches[searchIdx]===node.id;ctx.strokeStyle=cur?'#f9e2af':'#89b4fa';ctx.lineWidth=cur?3:2;ctx.setLineDash([5,3]);roundRect(x-3,y-3,node.w+6,node.h+6,10);ctx.stroke();ctx.setLineDash([]);}ctx.globalAlpha=1;}
+function drawNode(node,exp){if(!exp&&isHidden(node.id))return;const x=node.x-node.w/2,y=node.y-node.h/2,dim=!exp&&charFilter.size>0&&!node.chars.some(c=>charFilter.has(c)),sel=!exp&&(node===selNode||multiSel.has(node.id)),isConn=!exp&&mode==='connect'&&connFrom===node,catCol=(CATS[node.cat]||CATS.daily).color;ctx.globalAlpha=dim?.12:1;ctx.save();ctx.shadowColor='rgba(0,0,0,0.25)';ctx.shadowBlur=sel?12:6;ctx.shadowOffsetY=2;ctx.fillStyle=sel?T.surface2:T.surface;roundRect(x,y,node.w,node.h,8);ctx.fill();ctx.shadowColor='transparent';ctx.strokeStyle=isConn?'#f9e2af':sel?'var(--sel)':'transparent';if(sel){const cs=getComputedStyle(document.documentElement).getPropertyValue('--sel').trim();ctx.strokeStyle=isConn?'#f9e2af':cs;}else ctx.strokeStyle=T.border;ctx.lineWidth=sel||isConn?2:1;ctx.stroke();ctx.restore();ctx.fillStyle=catCol;roundRect(x+2,y+2,node.w-4,4,2);ctx.fill();ctx.fillStyle=T.text;ctx.font='14px "Segoe UI","Microsoft YaHei",sans-serif';ctx.textAlign='left';ctx.textBaseline='top';const lines=node._lines||['(空)'];for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],x+PAD,y+PAD+2+i*LINE_H);if(node.chars.length){ctx.font='11px "Segoe UI",sans-serif';let tx=x+PAD;const ty=y+PAD+2+lines.length*LINE_H+TAG_PAD;for(const ch of node.chars){const tw=ctx.measureText(ch).width+12;ctx.fillStyle=charColor(ch);roundRect(tx,ty,tw,TAG_H-2,10);ctx.fill();ctx.fillStyle=T.tagText;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(ch,tx+6,ty+TAG_H/2-1);tx+=tw+4;}}if(!exp&&collapsed.has(node.id)){const cc=getDesc(node.id).size;if(cc>0){const bx=node.x+node.w/2-8,by=node.y+node.h/2-8;ctx.fillStyle='#f9e2af';ctx.beginPath();ctx.arc(bx,by,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1e1e2e';ctx.font='bold 10px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+'+cc,bx,by);}}if(!exp&&node.notes){ctx.fillStyle='#f9e2af';ctx.font='bold 10px "Segoe UI",sans-serif';ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('*',x+node.w-6,y+8);}if(!exp&&node.body){ctx.fillStyle=T.sub;ctx.font='9px "Segoe UI",sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('...',x+node.w-6,y+node.h-4);}if(!exp&&searchMatches.length>0&&searchMatches.includes(node.id)){const cur=searchIdx>=0&&searchMatches[searchIdx]===node.id;ctx.strokeStyle=cur?'#f9e2af':'#89b4fa';ctx.lineWidth=cur?3:2;ctx.setLineDash([5,3]);roundRect(x-3,y-3,node.w+6,node.h+6,10);ctx.stroke();ctx.setLineDash([]);}ctx.globalAlpha=1;}
 
 function render(){const dpr=window.devicePixelRatio||1;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cvs.width,cvs.height);ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);drawGrid();edges.forEach(e=>drawEdge(e,false));nodes.forEach(n=>drawNode(n,false));
 if((mode==='connect'&&connFrom&&drag)||dragEdgeFrom){const src=dragEdgeFrom||connFrom;if(src&&drag){const w=s2w(drag.x,drag.y);ctx.strokeStyle='rgba(137,180,250,0.5)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(src.x,src.y+src.h/2);ctx.lineTo(w.x,w.y);ctx.stroke();ctx.setLineDash([]);}}
@@ -266,7 +267,7 @@ ctx.restore();}
 function nodeAt(wx,wy){for(let i=nodes.length-1;i>=0;i--){const n=nodes[i];if(!isHidden(n.id)&&wx>=n.x-n.w/2&&wx<=n.x+n.w/2&&wy>=n.y-n.h/2&&wy<=n.y+n.h/2)return n;}return null;}
 function edgeAt(wx,wy){let best=null,bestD=12;for(const e of edges){if(!edgeVis(e))continue;const p=edgePoints(e);if(!p)continue;for(let t=0;t<=1;t+=.03){const d=Math.hypot(wx-bezAt(t,p.x1,p.cx1,p.cx2,p.x2),wy-bezAt(t,p.y1,p.cy1,p.cy2,p.y2));if(d<bestD){bestD=d;best=e;}}}return best;}
 
-function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',chars:[],cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
+function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',body:'',notes:'',chars:[],cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
 function addEdge(fid,tid){if(fid===tid)return null;if(edges.find(e=>e.from===fid&&e.to===tid))return null;const e={id:eid++,from:fid,to:tid,probability:50,label:''};edges.push(e);return e;}
 function deleteNode(node){edges=edges.filter(e=>e.from!==node.id&&e.to!==node.id);nodes=nodes.filter(n=>n!==node);if(selNode===node)selNode=null;multiSel.delete(node.id);}
 function deleteEdge(edge){edges=edges.filter(e=>e!==edge);if(selEdge===edge)selEdge=null;}
@@ -281,11 +282,15 @@ window.batchCat=batchCat;window.batchDel=batchDel;window.clearMulti=clearMulti;
 
 // --- Panel ---
 const pEmpty=document.getElementById('p-empty'),pNode=document.getElementById('p-node'),pEdge=document.getElementById('p-edge');
-function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;renderCatBtns();renderTags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';}}
+function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;document.getElementById('nd-body').value=selNode.body||'';document.getElementById('nd-notes').value=selNode.notes||'';renderCatBtns();renderTags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';}}
 function renderCatBtns(){const el=document.getElementById('nd-cat');el.innerHTML='';Object.entries(CATS).forEach(([k,v])=>{const b=document.createElement('button');b.className='cat-btn'+(selNode.cat===k?' active':'');b.style.borderColor=v.color;b.textContent=v.name;b.onclick=()=>{if(!selNode)return;pushHistory();selNode.cat=k;renderCatBtns();save();render();};el.appendChild(b);});}
 function renderTags(){const el=document.getElementById('nd-tags');el.innerHTML='';if(!selNode)return;selNode.chars.forEach((ch,i)=>{const tag=document.createElement('span');tag.className='tag-item';tag.style.background=charColor(ch);tag.innerHTML=ch+' <span class="tag-x" data-i="'+i+'">x</span>';el.appendChild(tag);});el.querySelectorAll('.tag-x').forEach(x=>{x.onclick=()=>{pushHistory();selNode.chars.splice(+x.dataset.i,1);measure(selNode);renderTags();save();render();};});}
 document.getElementById('nd-text').oninput=function(){if(!selNode)return;selNode.text=this.value;measure(selNode);save();render();};
 document.getElementById('nd-text').onblur=function(){pushHistory();};
+document.getElementById('nd-body').oninput=function(){if(!selNode)return;selNode.body=this.value;save();};
+document.getElementById('nd-body').onblur=function(){pushHistory();};
+document.getElementById('nd-notes').oninput=function(){if(!selNode)return;selNode.notes=this.value;save();};
+document.getElementById('nd-notes').onblur=function(){pushHistory();};
 document.getElementById('nd-char-add').onclick=addCharTag;
 document.getElementById('nd-char-in').onkeydown=function(e){if(e.key==='Enter')addCharTag();};
 function addCharTag(){const inp=document.getElementById('nd-char-in'),v=inp.value.trim();if(!v||!selNode)return;pushHistory();if(!selNode.chars.includes(v))selNode.chars.push(v);inp.value='';measure(selNode);renderTags();save();render();}
@@ -421,12 +426,12 @@ document.getElementById('wt-back').onclick=()=>{if(wtPath.length>1){wtPath.pop()
 function startWalkthrough(){if(!nodes.length)return;const pm={};nodes.forEach(n=>pm[n.id]=[]);edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e.from);});const roots=nodes.filter(n=>pm[n.id].length===0);if(!roots.length)roots.push(nodes[0]);if(wtPath.length===0){if(roots.length===1){wtPath=[roots[0].id];showWtNode(roots[0].id);}else showWtRootChoice(roots);}else showWtNode(wtPath[wtPath.length-1]);document.getElementById('wt-overlay').classList.add('show');}
 function endWalkthrough(){document.getElementById('wt-overlay').classList.remove('show');}
 function showWtRootChoice(roots){document.getElementById('wt-step').textContent='选择起点';document.getElementById('wt-cat-bar').style.background='#45475a';document.getElementById('wt-card').innerHTML='<div class="wt-text">这个故事有多个起点，请选择一个开始：</div>';const ch=document.getElementById('wt-choices');ch.innerHTML='';roots.forEach(r=>{const b=document.createElement('div');b.className='wt-choice';b.innerHTML=`<div class="wt-choice-text">${escHtml(r.text||'(空)')}</div>`;b.onclick=()=>{wtPath=[r.id];showWtNode(r.id);};ch.appendChild(b);});}
-function showWtNode(nid){const node=nodes.find(n=>n.id===nid);if(!node)return;const cat=CATS[node.cat]||CATS.daily;document.getElementById('wt-step').textContent=`第 ${wtPath.length} 步`;document.getElementById('wt-cat-bar').style.background=cat.color;let html=`<div class="wt-text">${escHtml(node.text||'(空)')}</div>`;if(node.chars.length){html+='<div class="wt-chars">';node.chars.forEach(c=>{html+=`<span style="background:${charColor(c)}">${escHtml(c)}</span>`;});html+='</div>';}document.getElementById('wt-card').innerHTML=html;const oe=edges.filter(e=>e.from===nid),ch=document.getElementById('wt-choices');ch.innerHTML='';if(!oe.length){ch.innerHTML=`<div class="wt-ending"><div class="wt-ending-title">${cat.name==='结局'?'故事结束':'路线终点'}</div><div>你走过了 ${wtPath.length} 个节点</div></div>`;return;}oe.forEach(e=>{const t=nodes.find(n=>n.id===e.to);if(!t)return;const b=document.createElement('div');b.className='wt-choice';b.innerHTML=`<span class="wt-choice-prob" style="color:${probColor(e.probability)}">${e.probability}%</span><div><div class="wt-choice-text">${escHtml(t.text||'(空)')}</div>${e.label?'<div class="wt-choice-label">'+escHtml(e.label)+'</div>':''}</div>`;b.onclick=()=>{wtPath.push(e.to);showWtNode(e.to);};ch.appendChild(b);});}
+function showWtNode(nid){const node=nodes.find(n=>n.id===nid);if(!node)return;const cat=CATS[node.cat]||CATS.daily;document.getElementById('wt-step').textContent=`第 ${wtPath.length} 步`;document.getElementById('wt-cat-bar').style.background=cat.color;const bodyTxt=node.body||node.text||'(空)';const summaryTxt=node.body?node.text:'';let html=(summaryTxt?`<div style="font-size:12px;color:#6c7086;margin-bottom:8px">${escHtml(summaryTxt)}</div>`:'')+`<div class="wt-text">${escHtml(bodyTxt)}</div>`;if(node.chars.length){html+='<div class="wt-chars">';node.chars.forEach(c=>{html+=`<span style="background:${charColor(c)}">${escHtml(c)}</span>`;});html+='</div>';}document.getElementById('wt-card').innerHTML=html;const oe=edges.filter(e=>e.from===nid),ch=document.getElementById('wt-choices');ch.innerHTML='';if(!oe.length){ch.innerHTML=`<div class="wt-ending"><div class="wt-ending-title">${cat.name==='结局'?'故事结束':'路线终点'}</div><div>你走过了 ${wtPath.length} 个节点</div></div>`;return;}oe.forEach(e=>{const t=nodes.find(n=>n.id===e.to);if(!t)return;const b=document.createElement('div');b.className='wt-choice';b.innerHTML=`<span class="wt-choice-prob" style="color:${probColor(e.probability)}">${e.probability}%</span><div><div class="wt-choice-text">${escHtml(t.text||'(空)')}</div>${e.label?'<div class="wt-choice-label">'+escHtml(e.label)+'</div>':''}</div>`;b.onclick=()=>{wtPath.push(e.to);showWtNode(e.to);};ch.appendChild(b);});}
 
 // --- Search ---
 function openSearch(){document.getElementById('search-bar').classList.add('show');const inp=document.getElementById('s-input');inp.focus();inp.select();}
 function closeSearch(){document.getElementById('search-bar').classList.remove('show');searchMatches=[];searchIdx=-1;searchTerm='';render();}
-function doSearch(){const q=document.getElementById('s-input').value.trim().toLowerCase();searchTerm=q;if(!q){searchMatches=[];searchIdx=-1;updateSearchInfo();render();return;}searchMatches=nodes.filter(n=>(n.text||'').toLowerCase().includes(q)||n.chars.some(c=>c.toLowerCase().includes(q))).map(n=>n.id);searchIdx=searchMatches.length>0?0:-1;updateSearchInfo();focusMatch();render();}
+function doSearch(){const q=document.getElementById('s-input').value.trim().toLowerCase();searchTerm=q;if(!q){searchMatches=[];searchIdx=-1;updateSearchInfo();render();return;}searchMatches=nodes.filter(n=>(n.text||'').toLowerCase().includes(q)||(n.body||'').toLowerCase().includes(q)||(n.notes||'').toLowerCase().includes(q)||n.chars.some(c=>c.toLowerCase().includes(q))).map(n=>n.id);searchIdx=searchMatches.length>0?0:-1;updateSearchInfo();focusMatch();render();}
 function searchNav(dir){if(!searchMatches.length)return;searchIdx=(searchIdx+dir+searchMatches.length)%searchMatches.length;updateSearchInfo();focusMatch();render();}
 function focusMatch(){if(searchIdx<0)return;const n=nodes.find(x=>x.id===searchMatches[searchIdx]);if(!n)return;pan.x=cvs.clientWidth/2-n.x*zoom;pan.y=cvs.clientHeight/2-n.y*zoom;}
 function updateSearchInfo(){document.getElementById('s-info').textContent=searchMatches.length?`${searchIdx+1}/${searchMatches.length}`:searchTerm?'0':'';}
@@ -457,7 +462,7 @@ function updateTitle() {
 
 function getFileData() {
   return JSON.stringify({version:1,
-    nodes:nodes.map(n=>({id:n.id,text:n.text,characters:n.chars,category:n.cat,x:n.x,y:n.y})),
+    nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,category:n.cat,x:n.x,y:n.y})),
     edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label}))
   },null,2);
 }
@@ -519,11 +524,11 @@ document.getElementById('btn-save').onclick = fileSave;
 document.getElementById('btn-export').onclick = fileSaveAs;
 document.getElementById('btn-import').onclick = fileOpen;
 
-function loadData(data){nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',chars:n.characters||[],cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||''}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();}
+function loadData(data){nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',body:n.body||'',notes:n.notes||'',chars:n.characters||[],cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||''}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();}
 
 // --- Persistence ---
 const SAVE_KEY='story-tree-data';
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:1,nodes:nodes.map(n=>({id:n.id,text:n.text,characters:n.chars,category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label})),view:{pan,zoom}}));}catch(e){}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label})),view:{pan,zoom}}));}catch(e){}}
 function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;const data=JSON.parse(raw);loadData(data);if(data.view){pan=data.view.pan||{x:0,y:0};zoom=data.view.zoom||1;document.getElementById('zoom-ind').textContent=Math.round(zoom*100)+'%';}}catch(e){}}
 
 // --- Init ---
@@ -543,8 +548,65 @@ document.getElementById('cfg-save').onclick=()=>{apiCfg.endpoint=document.getEle
 document.getElementById('modal-overlay').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('show');};
 
 // --- AI ---
-function buildTreeContext(fn){let c='## Story Tree\n\n';const nm={},pm={},cm={};nodes.forEach(n=>{nm[n.id]=n;pm[n.id]=[];cm[n.id]=[];});edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e);if(cm[e.from])cm[e.from].push(e);});nodes.forEach(n=>{const mk=n===fn?' [FOCUS]':'';c+=`#${n.id}${mk} [${(CATS[n.cat]||CATS.daily).name}]: "${n.text||'(空)'}"\n`;if(n.chars.length)c+=`  Chars: ${n.chars.join(', ')}\n`;pm[n.id].forEach(e=>{const f=nm[e.from];c+=`  <- #${e.from} "${f?f.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});cm[n.id].forEach(e=>{const t=nm[e.to];c+=`  -> #${e.to} "${t?t.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});c+='\n';});return c;}
+function buildTreeContext(fn){let c='## Story Tree\n\n';const nm={},pm={},cm={};nodes.forEach(n=>{nm[n.id]=n;pm[n.id]=[];cm[n.id]=[];});edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e);if(cm[e.from])cm[e.from].push(e);});nodes.forEach(n=>{const mk=n===fn?' [FOCUS]':'';c+=`#${n.id}${mk} [${(CATS[n.cat]||CATS.daily).name}]: "${n.text||'(空)'}"${n.body?'\n  Body: "'+n.body.slice(0,200)+'"':''}\n`;if(n.chars.length)c+=`  Chars: ${n.chars.join(', ')}\n`;pm[n.id].forEach(e=>{const f=nm[e.from];c+=`  <- #${e.from} "${f?f.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});cm[n.id].forEach(e=>{const t=nm[e.to];c+=`  -> #${e.to} "${t?t.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});c+='\n';});return c;}
 document.getElementById('nd-ai').onclick=async function(){if(!selNode)return;if(!apiCfg.endpoint||!apiCfg.key){document.getElementById('btn-settings').click();return;}const btn=this,res=document.getElementById('ai-results');btn.disabled=true;btn.textContent='思考中...';res.innerHTML='<div class="ai-status">正在生成...</div>';const tc=buildTreeContext(selNode);try{const resp=await fetch(apiCfg.endpoint+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},body:JSON.stringify({model:apiCfg.model,messages:[{role:'system',content:'Creative story assistant. JSON arrays only, no markdown. Chinese text.'},{role:'user',content:`Suggest 3-5 branches from FOCUS node.\n\n${tc}\n\nJSON: [{"text":"1-2 sentences Chinese","characters":["Chinese names"],"probability":0-100,"label":"2-4 words Chinese","category":"daily|conflict|turning|climax|ending"}]\nProbabilities ~100 total.`}],temperature:.9})});if(!resp.ok)throw new Error('API '+resp.status);const data=await resp.json();let content=data.choices[0].message.content.trim().replace(/^```json?\s*/i,'').replace(/```\s*$/,'').trim();const sugs=JSON.parse(content);res.innerHTML='';const fid=selNode.id,fref=selNode;sugs.forEach((s,i)=>{const card=document.createElement('div');card.className='ai-card';const ci=CATS[s.category]||CATS.daily;card.innerHTML=`<div class="ai-title">${escHtml(s.text)}</div><div class="ai-meta">${s.probability}% | ${escHtml(s.label||'')} | ${ci.name}</div>${s.characters?.length?'<div class="ai-chars">'+s.characters.map(c=>`<span style="background:${charColor(c)}">${escHtml(c)}</span>`).join('')+'</div>':''}`;card.onclick=()=>{pushHistory();const nn=addNode(fref.x+(i-(sugs.length-1)/2)*220,fref.y+fref.h/2+140+i*20,s.text,s.category||'daily');if(s.characters)s.characters.forEach(c=>{if(!nn.chars.includes(c))nn.chars.push(c);});measure(nn);const ne=addEdge(fid,nn.id);if(ne){ne.probability=s.probability||50;ne.label=s.label||'';}card.style.opacity='.4';card.style.pointerEvents='none';save();render();};res.appendChild(card);});const aa=document.createElement('div');aa.className='ai-card';aa.innerHTML='<div class="ai-title" style="text-align:center;color:var(--sel)">全部应用</div>';aa.onclick=()=>{res.querySelectorAll('.ai-card').forEach(c=>{if(c!==aa&&c.style.opacity!=='0.4')c.click();});};res.appendChild(aa);}catch(err){res.innerHTML=`<div class="ai-status" style="color:#f38ba8">错误: ${escHtml(err.message)}</div>`;}btn.disabled=false;btn.textContent='AI 生成分支';};
+
+// --- Export Playable HTML ---
+document.getElementById('btn-export-play').onclick=exportPlayable;
+async function exportPlayable(){
+  if(!nodes.length)return;
+  const nd=JSON.stringify(nodes.map(n=>({id:n.id,text:n.text,body:n.body,chars:n.chars,cat:n.cat})));
+  const ed=JSON.stringify(edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label})));
+  const pm={};nodes.forEach(n=>pm[n.id]=[]);edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e.from);});
+  const roots=nodes.filter(n=>pm[n.id].length===0);
+  const rid=roots.length?roots[0].id:nodes[0].id;
+  const h=`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>故事</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:#1e1e2e;color:#cdd6f4;min-height:100vh;display:flex;justify-content:center;padding:40px 20px}
+.w{max-width:640px;width:100%}.st{font-size:12px;color:#6c7086;margin-bottom:8px;text-align:center}
+.cb{height:4px;border-radius:2px;margin-bottom:16px}
+.cd{background:#292a3a;border:1px solid #45475a;border-radius:12px;padding:28px;margin-bottom:20px}
+.sm{font-size:12px;color:#6c7086;margin-bottom:8px}.bd{font-size:16px;line-height:1.8;white-space:pre-wrap}
+.ch{display:flex;flex-wrap:wrap;gap:4px;margin-top:14px}.ch span{padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500}
+.cs{display:flex;flex-direction:column;gap:8px}
+.c{background:#313244;border:1px solid #45475a;border-radius:10px;padding:14px 18px;cursor:pointer;color:#cdd6f4;font-size:14px;display:flex;align-items:center;gap:12px;transition:all .15s}
+.c:hover{border-color:#89b4fa;background:#3b3d52}
+.pr{font-size:12px;color:#6c7086;min-width:36px}.lb{font-size:11px;color:#89b4fa;margin-top:2px}
+.en{text-align:center;padding:20px;color:#6c7086}.en h2{color:#cdd6f4;margin-bottom:8px}
+.nv{display:flex;gap:8px;margin-bottom:16px}.nv button{background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px}.nv button:hover{background:#45475a}.nv .sp{flex:1}
+</style></head><body><div class="w">
+<div class="nv"><button onclick="B()">后退</button><span class="sp"></span><span class="st" id="s"></span><span class="sp"></span><button onclick="R()">重新开始</button></div>
+<div class="cb" id="cb"></div><div class="cd" id="cd"></div><div class="cs" id="cs"></div>
+</div><script>
+const CT={daily:{n:'日常',c:'#585b70'},conflict:{n:'冲突',c:'#f38ba8'},turning:{n:'转折',c:'#f9e2af'},climax:{n:'高潮',c:'#cba6f7'},ending:{n:'结局',c:'#a6e3a1'}};
+const CL=['#f38ba8','#fab387','#f9e2af','#a6e3a1','#94e2d5','#89b4fa','#cba6f7','#f5c2e7','#74c7ec','#b4befe'];
+function cc(n){let h=0;for(let i=0;i<n.length;i++)h=((h<<5)-h+n.charCodeAt(i))|0;return CL[Math.abs(h)%CL.length];}
+function pc(p){return p>=70?'#a6e3a1':p>=30?'#f9e2af':'#f38ba8';}
+function E(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const N=${nd};const D=${ed};const P=[${rid}];
+function S(id){const n=N.find(x=>x.id===id);if(!n)return;const ct=CT[n.cat]||CT.daily;
+document.getElementById('s').textContent='第 '+P.length+' 步';document.getElementById('cb').style.background=ct.c;
+const bt=n.body||n.text||'';const st=n.body?n.text:'';
+let h=(st?'<div class="sm">'+E(st)+'</div>':'')+'<div class="bd">'+E(bt)+'</div>';
+if(n.chars.length){h+='<div class="ch">';n.chars.forEach(c=>{h+='<span style="background:'+cc(c)+';color:#1e1e2e">'+E(c)+'</span>';});h+='</div>';}
+document.getElementById('cd').innerHTML=h;
+const oe=D.filter(e=>e.from===id),cs=document.getElementById('cs');cs.innerHTML='';
+if(!oe.length){cs.innerHTML='<div class="en"><h2>'+(ct.n==='结局'?'故事结束':'路线终点')+'</h2><div>走过 '+P.length+' 个节点</div></div>';return;}
+oe.forEach(e=>{const t=N.find(x=>x.id===e.to);if(!t)return;const b=document.createElement('div');b.className='c';
+b.innerHTML='<span class="pr" style="color:'+pc(e.probability)+'">'+e.probability+'%<'+'/span><div><div>'+E(t.text||'')+'<'+'/div>'+(e.label?'<div class="lb">'+E(e.label)+'<'+'/div>':'')+'<'+'/div>';
+b.onclick=()=>{P.push(e.to);S(e.to);scrollTo(0,0);};cs.appendChild(b);});}
+function B(){if(P.length>1){P.pop();S(P[P.length-1]);}}function R(){P.length=0;P.push(${rid});S(${rid});}
+S(${rid});
+<`+`/script></body></html>`;
+  if(isTauri){try{const p=await window.__TAURI__.dialog.save({filters:[{name:'HTML',extensions:['html']}],defaultPath:'story.html'});if(p)await window.__TAURI__.fs.writeTextFile(p,h);}catch(e){console.error(e);}}
+  else{const blob=new Blob([h],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='story.html';a.click();URL.revokeObjectURL(a.href);}
+}
+
+// --- Auto-save (30s) ---
+setInterval(()=>{if(dirty&&currentFile&&isTauri)fileSave();},30000);
+
+// --- Close warning ---
+if(isTauri){try{window.__TAURI__.event.listen('tauri://close-requested',async()=>{if(dirty){const ok=await window.__TAURI__.dialog.confirm('有未保存的修改，确定退出吗？',{title:'故事树',kind:'warning'});if(!ok)return;}window.__TAURI__.window.getCurrentWindow().destroy();});}catch(e){}}
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 </script>
 </body>
 </html>
