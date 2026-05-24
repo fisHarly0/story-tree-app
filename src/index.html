@@ -227,13 +227,13 @@ input[type="file"]{display:none}
     </div>
     <aside id="panel">
       <div id="p-empty"><h3>故事树</h3><div class="help-block"><p>双击空白添加节点</p><p><kbd>Shift</kbd>+点击连线 / 从节点底部拖出连线</p><p><kbd>Alt</kbd>+拖拽框选多个节点</p><p>滚轮缩放 拖拽平移 <kbd>Ctrl+F</kbd> 搜索</p><p><kbd>Del</kbd> 删除 <kbd>Ctrl+Z</kbd> 撤销</p><p><kbd>Ctrl+S</kbd> 保存 <kbd>Ctrl+O</kbd> 打开</p></div></div>
-      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>摘要 (画布显示)</label><textarea id="nd-text" rows="2" placeholder="简短概括..."></textarea><label>正文</label><textarea id="nd-body" rows="6" placeholder="完整场景描写、对话、细节..."></textarea><label>备注</label><textarea id="nd-notes" rows="2" placeholder="创作备忘、待修改..." style="font-style:italic;opacity:.8"></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><label>设置标记 (进入此节点时)</label><div class="tag-list" id="nd-flags-set"></div><div class="flag-add"><input id="nd-flag-in" type="text" placeholder="标记名 (如: 有钥匙)"><button id="nd-flag-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
+      <div id="p-node" style="display:none"><h3>节点</h3><label>分类</label><div class="cat-btns" id="nd-cat"></div><label>摘要 (画布显示)</label><textarea id="nd-text" rows="2" placeholder="简短概括..."></textarea><label>正文</label><textarea id="nd-body" rows="6" placeholder="完整场景描写、对话、细节..."></textarea><label>备注</label><textarea id="nd-notes" rows="2" placeholder="创作备忘、待修改..." style="font-style:italic;opacity:.8"></textarea><label>角色标签</label><div class="tag-list" id="nd-tags"></div><div class="tag-add"><input id="nd-char-in" type="text" placeholder="输入角色名..."><button id="nd-char-add">+</button></div><label>AI 指令 (本节点补充)</label><textarea id="nd-ai-inst" rows="2" placeholder="针对此节点的 AI 生成指令..." style="font-size:11px"></textarea><label>设置标记 (进入此节点时)</label><div class="tag-list" id="nd-flags-set"></div><div class="flag-add"><input id="nd-flag-in" type="text" placeholder="标记名 (如: 有钥匙)"><button id="nd-flag-add">+</button></div><button class="btn-ai" id="nd-ai">AI 生成分支</button><div id="ai-results"></div><button class="btn-danger" id="nd-del">删除节点</button></div>
       <div id="p-edge" style="display:none"><h3>连线</h3><label>类型</label><div class="etype-btns" id="ed-type"></div><label>概率 <span class="prob-val" id="ed-prob-v">50%</span></label><input type="range" id="ed-prob" min="0" max="100" value="50"><label>标注</label><input type="text" id="ed-label" placeholder="描述这条路线..."><label>需要标记 (全部满足才显示)</label><div class="tag-list" id="ed-req-flags"></div><div class="flag-add"><input id="ed-req-in" type="text" placeholder="标记名..."><button id="ed-req-add">+</button></div><label>排除标记 (有则隐藏)</label><div class="tag-list" id="ed-not-flags"></div><div class="flag-add"><input id="ed-not-in" type="text" placeholder="标记名..."><button id="ed-not-add">+</button></div><button class="btn-danger" id="ed-del">删除连线</button></div>
     </aside>
   </div>
 </div>
 <div id="pres-overlay"><div id="pres-inner"><div id="pres-cat"></div><div id="pres-text"></div><div id="pres-chars"></div><div id="pres-choices"></div></div><div id="pres-footer"><button onclick="presBack()">后退</button><button onclick="presRestart()">重来</button><button onclick="presClose()">退出 (Esc)</button></div><div id="pres-step"></div></div>
-<div id="modal-overlay"><div id="modal"><h3>API 设置</h3><label>接口地址 (OpenAI 兼容)</label><input id="cfg-endpoint" type="text" placeholder="https://api.openai.com/v1"><label>密钥</label><input id="cfg-key" type="password" placeholder="sk-..."><label>模型</label><input id="cfg-model" type="text" placeholder="gpt-4o"><div class="modal-btns"><button class="btn-secondary" id="cfg-cancel">取消</button><button class="btn-primary" id="cfg-save">保存</button></div></div></div>
+<div id="modal-overlay"><div id="modal" style="max-height:85vh;overflow-y:auto"><h3>API 与 AI 设置</h3><label>接口地址 (OpenAI 兼容)</label><input id="cfg-endpoint" type="text" placeholder="https://api.openai.com/v1"><label>密钥</label><input id="cfg-key" type="password" placeholder="sk-..."><label>模型</label><input id="cfg-model" type="text" placeholder="gpt-4o"><hr style="border-color:var(--border);margin:16px 0"><h3>AI 行为配置</h3><label>全局系统提示</label><textarea id="cfg-system" rows="2" placeholder="AI 生成内容时的全局指令..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>世界规则</label><textarea id="cfg-world" rows="2" placeholder="世界观、时代背景、物理法则..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>语气风格</label><textarea id="cfg-tone" rows="2" placeholder="文风、叙事视角、情感基调..." style="width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical"></textarea><label>角色定义 <button id="cfg-char-add" style="background:var(--sel);color:#fff;border:none;border-radius:4px;padding:1px 8px;cursor:pointer;font-size:11px;margin-left:8px">+</button></label><div id="cfg-chars"></div><hr style="border-color:var(--border);margin:16px 0"><label>生成分支数 <span id="cfg-bc-v" style="color:var(--sel);float:right">3</span></label><input type="range" id="cfg-bc" min="1" max="5" value="3" style="width:100%;accent-color:var(--sel)"><label>Temperature <span id="cfg-temp-v" style="color:var(--sel);float:right">0.9</span></label><input type="range" id="cfg-temp" min="0" max="20" value="9" style="width:100%;accent-color:var(--sel)"><label style="display:flex;align-items:center;gap:8px;margin-top:8px"><input type="checkbox" id="cfg-auto-gen" checked> 叶子节点自动 AI 续写 (走读/演示模式)</label><div class="modal-btns"><button class="btn-secondary" id="cfg-cancel">取消</button><button class="btn-primary" id="cfg-save">保存</button></div></div></div>
 <div id="wt-overlay"><div class="wt-container"><div class="wt-header"><button id="wt-back">后退</button><span class="wt-step" id="wt-step"></span><button id="wt-restart">重新开始</button><button id="wt-close">退出</button></div><div class="wt-cat-bar" id="wt-cat-bar"></div><div class="wt-card" id="wt-card"></div><div class="wt-choices" id="wt-choices"></div></div></div>
 <script>
 const COLORS=['#f38ba8','#fab387','#f9e2af','#a6e3a1','#94e2d5','#89b4fa','#cba6f7','#f5c2e7','#74c7ec','#b4befe','#eba0ac','#89dceb'];
@@ -243,6 +243,7 @@ const ETYPES={cause:{name:'因果',dash:[]},flashback:{name:'闪回',dash:[8,4]}
 const DARK={bg:'#1e1e2e',surface:'#292a3a',surface2:'#313244',text:'#cdd6f4',sub:'#6c7086',border:'#45475a',grid:'rgba(205,214,244,0.04)',tagText:'#1e1e2e'};
 const LIGHT={bg:'#f0f0ea',surface:'#ffffff',surface2:'#dbeafe',text:'#1e1e2e',sub:'#888',border:'#ccc',grid:'rgba(0,0,0,0.05)',tagText:'#1e1e2e'};
 let T=DARK;
+let aiConfig={systemPrompt:'',worldRules:'',toneGuide:'',characterDefs:{},generationParams:{temperature:0.9,branchCount:3,continueAtLeaves:true}};
 
 let nodes=[],edges=[],nid=1,eid=1;
 let selNode=null,selEdge=null;
@@ -279,9 +280,9 @@ document.getElementById('btn-theme').onclick=()=>{isLight=!isLight;T=isLight?LIG
 (function(){const t=localStorage.getItem('st-theme');if(t==='light'){isLight=true;T=LIGHT;document.body.classList.add('light');document.getElementById('btn-theme').textContent='深色';}})();
 
 // --- History ---
-function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,chars:[...n.chars],setFlags:[...(n.setFlags||[])],cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype,reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}))});}
+function serializeState(){return JSON.stringify({n:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,chars:[...n.chars],setFlags:[...(n.setFlags||[])],ai:n.aiInstructions||'',cat:n.cat,x:n.x,y:n.y})),e:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype,reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}))});}
 function pushHistory(){const snap=serializeState();if(historyIdx>=0&&history[historyIdx]===snap)return;history.length=historyIdx+1;history.push(snap);if(history.length>MAX_HIST){history.shift();historyIdx--;}historyIdx=history.length-1;updateUndoButtons();}
-function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,body:n.body||'',notes:n.notes||'',chars:n.chars||[],setFlags:n.setFlags||[],cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
+function restoreSnap(snap){const d=JSON.parse(snap);nodes=d.n.map(n=>({id:n.id,text:n.text,body:n.body||'',notes:n.notes||'',chars:n.chars||[],setFlags:n.setFlags||[],aiInstructions:n.ai||'',cat:n.cat||'daily',x:n.x,y:n.y,w:MIN_W,h:60,_lines:null}));edges=d.e.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();selNode=null;selEdge=null;multiSel.clear();updatePanel();updateBatch();save();render();}
 function undo(){if(historyIdx<=0)return;historyIdx--;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function redo(){if(historyIdx>=history.length-1)return;historyIdx++;restoreSnap(history[historyIdx]);updateUndoButtons();}
 function updateUndoButtons(){document.getElementById('btn-undo').disabled=historyIdx<=0;document.getElementById('btn-redo').disabled=historyIdx>=history.length-1;}
@@ -321,7 +322,7 @@ ctx.restore();}
 function nodeAt(wx,wy){for(let i=nodes.length-1;i>=0;i--){const n=nodes[i];if(!isHidden(n.id)&&wx>=n.x-n.w/2&&wx<=n.x+n.w/2&&wy>=n.y-n.h/2&&wy<=n.y+n.h/2)return n;}return null;}
 function edgeAt(wx,wy){let best=null,bestD=12;for(const e of edges){if(!edgeVis(e))continue;const p=edgePoints(e);if(!p)continue;for(let t=0;t<=1;t+=.03){const d=Math.hypot(wx-bezAt(t,p.x1,p.cx1,p.cx2,p.x2),wy-bezAt(t,p.y1,p.cy1,p.cy2,p.y2));if(d<bestD){bestD=d;best=e;}}}return best;}
 
-function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',body:'',notes:'',chars:[],setFlags:[],cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
+function addNode(wx,wy,text,cat){const n={id:nid++,text:text||'',body:'',notes:'',chars:[],setFlags:[],aiInstructions:'',cat:cat||'daily',x:wx,y:wy,w:MIN_W,h:60,_lines:null};measure(n);nodes.push(n);return n;}
 function addEdge(fid,tid){if(fid===tid)return null;if(edges.find(e=>e.from===fid&&e.to===tid))return null;const e={id:eid++,from:fid,to:tid,probability:50,label:'',etype:'cause',reqFlags:[],notFlags:[]};edges.push(e);return e;}
 function deleteNode(node){edges=edges.filter(e=>e.from!==node.id&&e.to!==node.id);nodes=nodes.filter(n=>n!==node);if(selNode===node)selNode=null;multiSel.delete(node.id);}
 function deleteEdge(edge){edges=edges.filter(e=>e!==edge);if(selEdge===edge)selEdge=null;}
@@ -336,7 +337,7 @@ window.batchCat=batchCat;window.batchDel=batchDel;window.clearMulti=clearMulti;
 
 // --- Panel ---
 const pEmpty=document.getElementById('p-empty'),pNode=document.getElementById('p-node'),pEdge=document.getElementById('p-edge');
-function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;document.getElementById('nd-body').value=selNode.body||'';document.getElementById('nd-notes').value=selNode.notes||'';renderCatBtns();renderTags();renderNodeFlags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';renderEtypeBtns();renderEdgeFlags();}}
+function updatePanel(){pEmpty.style.display=!selNode&&!selEdge?'':'none';pNode.style.display=selNode?'':'none';pEdge.style.display=selEdge?'':'none';if(selNode){document.getElementById('nd-text').value=selNode.text;document.getElementById('nd-body').value=selNode.body||'';document.getElementById('nd-notes').value=selNode.notes||'';document.getElementById('nd-ai-inst').value=selNode.aiInstructions||'';renderCatBtns();renderTags();renderNodeFlags();}if(selEdge){document.getElementById('ed-prob').value=selEdge.probability;document.getElementById('ed-prob-v').textContent=selEdge.probability+'%';document.getElementById('ed-label').value=selEdge.label||'';renderEtypeBtns();renderEdgeFlags();}}
 function renderCatBtns(){const el=document.getElementById('nd-cat');el.innerHTML='';Object.entries(CATS).forEach(([k,v])=>{const b=document.createElement('button');b.className='cat-btn'+(selNode.cat===k?' active':'');b.style.borderColor=v.color;b.textContent=v.name;b.onclick=()=>{if(!selNode)return;pushHistory();selNode.cat=k;renderCatBtns();save();render();};el.appendChild(b);});}
 function renderTags(){const el=document.getElementById('nd-tags');el.innerHTML='';if(!selNode)return;selNode.chars.forEach((ch,i)=>{const tag=document.createElement('span');tag.className='tag-item';tag.style.background=charColor(ch);tag.innerHTML=ch+' <span class="tag-x" data-i="'+i+'">x</span>';el.appendChild(tag);});el.querySelectorAll('.tag-x').forEach(x=>{x.onclick=()=>{pushHistory();selNode.chars.splice(+x.dataset.i,1);measure(selNode);renderTags();save();render();};});}
 // --- Flag editors ---
@@ -375,6 +376,8 @@ document.getElementById('nd-body').oninput=function(){if(!selNode)return;selNode
 document.getElementById('nd-body').onblur=function(){pushHistory();};
 document.getElementById('nd-notes').oninput=function(){if(!selNode)return;selNode.notes=this.value;save();};
 document.getElementById('nd-notes').onblur=function(){pushHistory();};
+document.getElementById('nd-ai-inst').oninput=function(){if(!selNode)return;selNode.aiInstructions=this.value;save();};
+document.getElementById('nd-ai-inst').onblur=function(){pushHistory();};
 document.getElementById('nd-char-add').onclick=addCharTag;
 document.getElementById('nd-char-in').onkeydown=function(e){if(e.key==='Enter')addCharTag();};
 function addCharTag(){const inp=document.getElementById('nd-char-in'),v=inp.value.trim();if(!v||!selNode)return;pushHistory();if(!selNode.chars.includes(v))selNode.chars.push(v);inp.value='';measure(selNode);renderTags();save();render();}
@@ -529,7 +532,11 @@ function showWtNode(nid){
   if(wtFlags.size){html+='<div id="wt-flags">';wtFlags.forEach(f=>{html+=`<span>${escHtml(f)}</span>`;});html+='</div>';}
   document.getElementById('wt-card').innerHTML=html;
   const oe=edges.filter(e=>e.from===nid),ch=document.getElementById('wt-choices');ch.innerHTML='';
-  if(!oe.length){ch.innerHTML=`<div class="wt-ending"><div class="wt-ending-title">${cat.name==='结局'?'故事结束':'路线终点'}</div><div>走过 ${wtPath.length} 步 | 收集 ${wtFlags.size} 个标记</div></div>`;return;}
+  if(!oe.length){
+    if(aiConfig.generationParams.continueAtLeaves&&apiCfg.endpoint&&apiCfg.key&&node.cat!=='ending'){
+      ch.innerHTML='<div class="ai-status" style="text-align:center">AI 正在续写故事...</div>';generateWtBranches(nid);return;
+    }
+    ch.innerHTML=`<div class="wt-ending"><div class="wt-ending-title">${cat.name==='结局'?'故事结束':'路线终点'}</div><div>走过 ${wtPath.length} 步 | 收集 ${wtFlags.size} 个标记</div></div>`;return;}
   oe.forEach(e=>{const t=nodes.find(n=>n.id===e.to);if(!t)return;
     const avail=wtEdgeAvail(e);
     const b=document.createElement('div');b.className='wt-choice'+(avail?'':' locked');
@@ -571,9 +578,10 @@ function updateTitle() {
 }
 
 function getFileData() {
-  return JSON.stringify({version:1,
-    nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,category:n.cat,x:n.x,y:n.y})),
-    edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}))
+  return JSON.stringify({version:2,
+    nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),
+    edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]})),
+    aiConfig:aiConfig
   },null,2);
 }
 
@@ -634,11 +642,16 @@ document.getElementById('btn-save').onclick = fileSave;
 document.getElementById('btn-export').onclick = fileSaveAs;
 document.getElementById('btn-import').onclick = fileOpen;
 
-function loadData(data){nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',body:n.body||'',notes:n.notes||'',chars:n.characters||[],setFlags:n.setFlags||[],cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||'',etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();}
+function loadData(data){
+  nodes=(data.nodes||[]).map(n=>({id:n.id,text:n.text||'',body:n.body||'',notes:n.notes||'',chars:n.characters||[],setFlags:n.setFlags||[],aiInstructions:n.aiInstructions||'',cat:n.category||'daily',x:n.x||0,y:n.y||0,w:MIN_W,h:60,_lines:null}));
+  edges=(data.edges||[]).map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability??50,label:e.label||'',etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]}));
+  if(data.aiConfig)aiConfig={...aiConfig,...data.aiConfig,generationParams:{...aiConfig.generationParams,...(data.aiConfig.generationParams||{})},characterDefs:{...(data.aiConfig.characterDefs||{})}};
+  nid=nodes.reduce((m,n)=>Math.max(m,n.id+1),1);eid=edges.reduce((m,e)=>Math.max(m,e.id+1),1);measureAll();select(null,null);save();
+}
 
 // --- Persistence ---
 const SAVE_KEY='story-tree-data';
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]})),view:{pan,zoom}}));}catch(e){}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:2,nodes:nodes.map(n=>({id:n.id,text:n.text,body:n.body,notes:n.notes,characters:n.chars,setFlags:n.setFlags,aiInstructions:n.aiInstructions||'',category:n.cat,x:n.x,y:n.y})),edges:edges.map(e=>({id:e.id,from:e.from,to:e.to,probability:e.probability,label:e.label,etype:e.etype||'cause',reqFlags:e.reqFlags||[],notFlags:e.notFlags||[]})),view:{pan,zoom},aiConfig:aiConfig}));}catch(e){}}
 function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return;const data=JSON.parse(raw);loadData(data);if(data.view){pan=data.view.pan||{x:0,y:0};zoom=data.view.zoom||1;document.getElementById('zoom-ind').textContent=Math.round(zoom*100)+'%';}}catch(e){}}
 
 // --- Init ---
@@ -652,12 +665,86 @@ updateTitle();
 const CFG_KEY='story-tree-api-cfg';
 let apiCfg={endpoint:'',key:'',model:'gpt-4o'};
 try{const c=JSON.parse(localStorage.getItem(CFG_KEY));if(c)apiCfg={...apiCfg,...c};}catch(e){}
-document.getElementById('btn-settings').onclick=()=>{document.getElementById('cfg-endpoint').value=apiCfg.endpoint;document.getElementById('cfg-key').value=apiCfg.key;document.getElementById('cfg-model').value=apiCfg.model;document.getElementById('modal-overlay').classList.add('show');};
+document.getElementById('btn-settings').onclick=()=>{
+  document.getElementById('cfg-endpoint').value=apiCfg.endpoint;document.getElementById('cfg-key').value=apiCfg.key;document.getElementById('cfg-model').value=apiCfg.model;
+  document.getElementById('cfg-system').value=aiConfig.systemPrompt||'';document.getElementById('cfg-world').value=aiConfig.worldRules||'';document.getElementById('cfg-tone').value=aiConfig.toneGuide||'';
+  document.getElementById('cfg-bc').value=aiConfig.generationParams.branchCount||3;document.getElementById('cfg-bc-v').textContent=aiConfig.generationParams.branchCount||3;
+  const tv=Math.round((aiConfig.generationParams.temperature||0.9)*10);document.getElementById('cfg-temp').value=tv;document.getElementById('cfg-temp-v').textContent=(tv/10).toFixed(1);
+  document.getElementById('cfg-auto-gen').checked=aiConfig.generationParams.continueAtLeaves!==false;
+  renderCharDefs();
+  document.getElementById('modal-overlay').classList.add('show');
+};
 document.getElementById('cfg-cancel').onclick=()=>document.getElementById('modal-overlay').classList.remove('show');
-document.getElementById('cfg-save').onclick=()=>{apiCfg.endpoint=document.getElementById('cfg-endpoint').value.trim().replace(/\/+$/,'');apiCfg.key=document.getElementById('cfg-key').value.trim();apiCfg.model=document.getElementById('cfg-model').value.trim()||'gpt-4o';localStorage.setItem(CFG_KEY,JSON.stringify(apiCfg));document.getElementById('modal-overlay').classList.remove('show');};
+document.getElementById('cfg-bc').oninput=function(){document.getElementById('cfg-bc-v').textContent=this.value;};
+document.getElementById('cfg-temp').oninput=function(){document.getElementById('cfg-temp-v').textContent=(this.value/10).toFixed(1);};
+function renderCharDefs(){const el=document.getElementById('cfg-chars');el.innerHTML='';Object.entries(aiConfig.characterDefs||{}).forEach(([name,def])=>{const d=document.createElement('div');d.style.cssText='background:var(--input);border:1px solid var(--border);border-radius:6px;padding:8px;margin:6px 0';d.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px"><b style="font-size:12px;color:'+charColor(name)+'">'+escHtml(name)+'</b><span style="cursor:pointer;color:#f38ba8;font-size:12px" data-cn="'+escHtml(name)+'">x</span></div><input data-cn="'+escHtml(name)+'" data-f="personality" placeholder="性格" value="'+escHtml(def.personality||'')+'" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;margin:2px 0;outline:none"><input data-cn="'+escHtml(name)+'" data-f="background" placeholder="背景" value="'+escHtml(def.background||'')+'" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;margin:2px 0;outline:none"><input data-cn="'+escHtml(name)+'" data-f="voice" placeholder="说话方式" value="'+escHtml(def.voice||'')+'" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;margin:2px 0;outline:none">';el.appendChild(d);});el.querySelectorAll('span[data-cn]').forEach(x=>{x.onclick=()=>{delete aiConfig.characterDefs[x.dataset.cn];renderCharDefs();};});el.querySelectorAll('input[data-cn]').forEach(t=>{t.oninput=()=>{if(!aiConfig.characterDefs[t.dataset.cn])aiConfig.characterDefs[t.dataset.cn]={};aiConfig.characterDefs[t.dataset.cn][t.dataset.f]=t.value;};});}
+document.getElementById('cfg-char-add').onclick=()=>{const n=prompt('角色名:');if(!n)return;if(!aiConfig.characterDefs)aiConfig.characterDefs={};aiConfig.characterDefs[n]=aiConfig.characterDefs[n]||{personality:'',background:'',voice:''};renderCharDefs();};
+document.getElementById('cfg-save').onclick=()=>{apiCfg.endpoint=document.getElementById('cfg-endpoint').value.trim().replace(/\/+$/,'');apiCfg.key=document.getElementById('cfg-key').value.trim();apiCfg.model=document.getElementById('cfg-model').value.trim()||'gpt-4o';localStorage.setItem(CFG_KEY,JSON.stringify(apiCfg));aiConfig.systemPrompt=document.getElementById('cfg-system').value;aiConfig.worldRules=document.getElementById('cfg-world').value;aiConfig.toneGuide=document.getElementById('cfg-tone').value;aiConfig.generationParams.branchCount=+document.getElementById('cfg-bc').value;aiConfig.generationParams.temperature=+document.getElementById('cfg-temp').value/10;aiConfig.generationParams.continueAtLeaves=document.getElementById('cfg-auto-gen').checked;save();document.getElementById('modal-overlay').classList.remove('show');};
 document.getElementById('modal-overlay').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('show');};
 
-// --- AI ---
+// --- AI Enhanced ---
+function buildAIPrompt(focusNode, pathHistory, activeFlags) {
+  const sp = ['You are a creative story assistant. Generate all content in Chinese.'];
+  if (aiConfig.systemPrompt) sp.push(aiConfig.systemPrompt);
+  if (aiConfig.worldRules) sp.push('World Rules:\n' + aiConfig.worldRules);
+  if (aiConfig.toneGuide) sp.push('Tone:\n' + aiConfig.toneGuide);
+  if (focusNode && focusNode.chars) {
+    focusNode.chars.forEach(c => {
+      const def = (aiConfig.characterDefs || {})[c];
+      if (def) sp.push(`Character "${c}": personality=${def.personality||'?'}, background=${def.background||'?'}, voice=${def.voice||'?'}`);
+    });
+  }
+  if (focusNode && focusNode.aiInstructions) sp.push('Node instructions:\n' + focusNode.aiInstructions);
+  let userMsg = buildTreeContext(focusNode);
+  if (pathHistory && pathHistory.length) {
+    userMsg += '\n## Path taken:\n';
+    pathHistory.forEach((nid, i) => { const n = nodes.find(x => x.id === nid); if (n) userMsg += `${i + 1}. "${n.text}"\n`; });
+  }
+  if (activeFlags && activeFlags.size) userMsg += '\nActive flags: ' + [...activeFlags].join(', ') + '\n';
+  return { system: sp.join('\n\n'), user: userMsg };
+}
+
+async function generateWtBranches(nodeId) {
+  const node = nodes.find(n => n.id === nodeId); if (!node) return;
+  const { system, user } = buildAIPrompt(node, wtPath, wtFlags);
+  const bc = aiConfig.generationParams.branchCount || 3;
+  const ch = document.getElementById('wt-choices');
+  try {
+    const resp = await fetch(apiCfg.endpoint + '/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiCfg.key },
+      body: JSON.stringify({ model: apiCfg.model, messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user + `\n\nGenerate ${bc} next story branches considering path and flags. JSON only: [{"text":"summary","body":"full scene 2-3 paragraphs Chinese","characters":["names"],"probability":0-100,"label":"2-4 words","category":"daily|conflict|turning|climax|ending","setFlags":["flags to set"]}]` }
+      ], temperature: aiConfig.generationParams.temperature || 0.9 })
+    });
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    let content = data.choices[0].message.content.trim().replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+    const branches = JSON.parse(content);
+    ch.innerHTML = '<div style="font-size:10px;color:#cba6f7;text-align:center;margin-bottom:8px">AI 生成的分支</div>';
+    branches.forEach(br => {
+      const b = document.createElement('div'); b.className = 'wt-choice';
+      b.innerHTML = `<span class="wt-choice-prob" style="color:${probColor(br.probability)}">${br.probability}%</span><div><div class="wt-choice-text">${escHtml(br.text)}</div>${br.label ? '<div class="wt-choice-label">' + escHtml(br.label) + '</div>' : ''}</div>`;
+      b.onclick = () => {
+        pushHistory();
+        const nn = addNode(node.x, node.y + node.h / 2 + 140, br.text, br.category || 'daily');
+        nn.body = br.body || ''; nn.setFlags = br.setFlags || [];
+        if (br.characters) br.characters.forEach(c => { if (!nn.chars.includes(c)) nn.chars.push(c); });
+        measure(nn);
+        const ne = addEdge(nodeId, nn.id);
+        if (ne) { ne.probability = br.probability || 50; ne.label = br.label || ''; }
+        save(); render();
+        wtPath.push(nn.id); showWtNode(nn.id);
+      };
+      ch.appendChild(b);
+    });
+    const regen = document.createElement('div'); regen.className = 'wt-choice'; regen.style.borderColor = '#cba6f7';
+    regen.innerHTML = '<div class="wt-choice-text" style="text-align:center;color:#cba6f7">重新生成</div>';
+    regen.onclick = () => { ch.innerHTML = '<div class="ai-status">AI 正在重新生成...</div>'; generateWtBranches(nodeId); };
+    ch.appendChild(regen);
+  } catch (err) { ch.innerHTML = `<div class="ai-status" style="color:#f38ba8">AI 生成失败: ${escHtml(err.message)}</div><div class="wt-ending"><div class="wt-ending-title">路线终点</div></div>`; }
+}
+
 function buildTreeContext(fn){let c='## Story Tree\n\n';const nm={},pm={},cm={};nodes.forEach(n=>{nm[n.id]=n;pm[n.id]=[];cm[n.id]=[];});edges.forEach(e=>{if(pm[e.to])pm[e.to].push(e);if(cm[e.from])cm[e.from].push(e);});nodes.forEach(n=>{const mk=n===fn?' [FOCUS]':'';c+=`#${n.id}${mk} [${(CATS[n.cat]||CATS.daily).name}]: "${n.text||'(空)'}"${n.body?'\n  Body: "'+n.body.slice(0,200)+'"':''}\n`;if(n.chars.length)c+=`  Chars: ${n.chars.join(', ')}\n`;pm[n.id].forEach(e=>{const f=nm[e.from];c+=`  <- #${e.from} "${f?f.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});cm[n.id].forEach(e=>{const t=nm[e.to];c+=`  -> #${e.to} "${t?t.text:'?'}" (${e.probability}%${e.label?', '+e.label:''})\n`;});c+='\n';});return c;}
 document.getElementById('nd-ai').onclick=async function(){if(!selNode)return;if(!apiCfg.endpoint||!apiCfg.key){document.getElementById('btn-settings').click();return;}const btn=this,res=document.getElementById('ai-results');btn.disabled=true;btn.textContent='思考中...';res.innerHTML='<div class="ai-status">正在生成...</div>';const tc=buildTreeContext(selNode);try{const resp=await fetch(apiCfg.endpoint+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},body:JSON.stringify({model:apiCfg.model,messages:[{role:'system',content:'Creative story assistant. JSON arrays only, no markdown. Chinese text.'},{role:'user',content:`Suggest 3-5 branches from FOCUS node.\n\n${tc}\n\nJSON: [{"text":"1-2 sentences Chinese","characters":["Chinese names"],"probability":0-100,"label":"2-4 words Chinese","category":"daily|conflict|turning|climax|ending"}]\nProbabilities ~100 total.`}],temperature:.9})});if(!resp.ok)throw new Error('API '+resp.status);const data=await resp.json();let content=data.choices[0].message.content.trim().replace(/^```json?\s*/i,'').replace(/```\s*$/,'').trim();const sugs=JSON.parse(content);res.innerHTML='';const fid=selNode.id,fref=selNode;sugs.forEach((s,i)=>{const card=document.createElement('div');card.className='ai-card';const ci=CATS[s.category]||CATS.daily;card.innerHTML=`<div class="ai-title">${escHtml(s.text)}</div><div class="ai-meta">${s.probability}% | ${escHtml(s.label||'')} | ${ci.name}</div>${s.characters?.length?'<div class="ai-chars">'+s.characters.map(c=>`<span style="background:${charColor(c)}">${escHtml(c)}</span>`).join('')+'</div>':''}`;card.onclick=()=>{pushHistory();const nn=addNode(fref.x+(i-(sugs.length-1)/2)*220,fref.y+fref.h/2+140+i*20,s.text,s.category||'daily');if(s.characters)s.characters.forEach(c=>{if(!nn.chars.includes(c))nn.chars.push(c);});measure(nn);const ne=addEdge(fid,nn.id);if(ne){ne.probability=s.probability||50;ne.label=s.label||'';}card.style.opacity='.4';card.style.pointerEvents='none';save();render();};res.appendChild(card);});const aa=document.createElement('div');aa.className='ai-card';aa.innerHTML='<div class="ai-title" style="text-align:center;color:var(--sel)">全部应用</div>';aa.onclick=()=>{res.querySelectorAll('.ai-card').forEach(c=>{if(c!==aa&&c.style.opacity!=='0.4')c.click();});};res.appendChild(aa);}catch(err){res.innerHTML=`<div class="ai-status" style="color:#f38ba8">错误: ${escHtml(err.message)}</div>`;}btn.disabled=false;btn.textContent='AI 生成分支';};
 
@@ -770,6 +857,10 @@ function showPresChoices(nid,node){
   ch.innerHTML='';
   if(!oe.length){
     const cat=CATS[node.cat]||CATS.daily;
+    if(aiConfig.generationParams.continueAtLeaves&&apiCfg.endpoint&&apiCfg.key&&node.cat!=='ending'){
+      ch.innerHTML='<div style="text-align:center;color:#cba6f7;padding:20px">AI 正在续写...</div>';
+      generatePresBranches(nid,node);return;
+    }
     ch.innerHTML=`<div style="text-align:center;color:#6c7086;padding:20px"><div style="font-size:20px;color:#cdd6f4;margin-bottom:8px">${cat.name==='结局'?'故事结束':'路线终点'}</div>走过 ${presPath.length} 步 | ${presFlags.size} 个标记</div>`;
     return;
   }
@@ -781,6 +872,13 @@ function showPresChoices(nid,node){
     if(avail)d.onclick=()=>{presPath.push(e.to);showPresNode(e.to);};
     ch.appendChild(d);
   });
+}
+async function generatePresBranches(nid,node){
+  const{system,user}=buildAIPrompt(node,presPath,presFlags);const bc=aiConfig.generationParams.branchCount||3;const ch=document.getElementById('pres-choices');
+  try{const resp=await fetch(apiCfg.endpoint+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},body:JSON.stringify({model:apiCfg.model,messages:[{role:'system',content:system},{role:'user',content:user+`\nGenerate ${bc} branches. JSON: [{"text":"summary","body":"scene Chinese","characters":["names"],"probability":0-100,"label":"label","category":"daily|conflict|turning|climax|ending","setFlags":["flags"]}]`}],temperature:aiConfig.generationParams.temperature||0.9})});
+  if(!resp.ok)throw new Error('API '+resp.status);const data=await resp.json();let c=data.choices[0].message.content.trim().replace(/^```json?\s*/i,'').replace(/```\s*$/,'').trim();const brs=JSON.parse(c);
+  ch.innerHTML='';brs.forEach(br=>{const d=document.createElement('div');d.className='pc';d.innerHTML=escHtml(br.text)+(br.label?'<span style="margin-left:8px;font-size:11px;color:#89b4fa">'+escHtml(br.label)+'</span>':'');d.onclick=()=>{pushHistory();const nn=addNode(node.x,node.y+node.h/2+140,br.text,br.category||'daily');nn.body=br.body||'';nn.setFlags=br.setFlags||[];if(br.characters)br.characters.forEach(c=>{if(!nn.chars.includes(c))nn.chars.push(c);});measure(nn);const ne=addEdge(nid,nn.id);if(ne){ne.probability=br.probability||50;ne.label=br.label||'';}save();render();presPath.push(nn.id);showPresNode(nn.id);};ch.appendChild(d);});
+  }catch(err){ch.innerHTML='<div style="text-align:center;color:#f38ba8;padding:20px">AI: '+escHtml(err.message)+'</div>';}
 }
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('pres-overlay').classList.contains('show'))return;

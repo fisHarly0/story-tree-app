@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/fisHarly0/story-tree-app/story-tree.schema.json",
+  "title": "Story Tree File Format",
+  "description": "故事树 (Story Tree) interactive fiction project file format v2",
+  "type": "object",
+  "required": ["version", "nodes", "edges"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "enum": [1, 2],
+      "description": "File format version. v1 is legacy (no body/notes/flags). v2 is current."
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "view": { "$ref": "#/$defs/viewState" },
+    "aiConfig": { "$ref": "#/$defs/aiConfig" }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "integer", "description": "Unique node identifier" },
+        "text": { "type": "string", "description": "Summary text displayed on canvas" },
+        "body": { "type": "string", "description": "Full scene text (prose, dialogue). Shown in walkthrough/presentation." },
+        "notes": { "type": "string", "description": "Author-only memo. Not shown in playback." },
+        "characters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Character names present in this scene"
+        },
+        "setFlags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Flags automatically set when the player enters this node"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["daily", "conflict", "turning", "climax", "ending"],
+          "default": "daily",
+          "description": "Node category. Controls color indicator on canvas."
+        },
+        "x": { "type": "number", "description": "Canvas X position (center)" },
+        "y": { "type": "number", "description": "Canvas Y position (center)" },
+        "aiInstructions": {
+          "type": "string",
+          "description": "Per-node AI instructions. Supplements global aiConfig when generating from this node."
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "from", "to"],
+      "properties": {
+        "id": { "type": "integer", "description": "Unique edge identifier" },
+        "from": { "type": "integer", "description": "Source node ID" },
+        "to": { "type": "integer", "description": "Target node ID" },
+        "probability": {
+          "type": "integer", "minimum": 0, "maximum": 100, "default": 50,
+          "description": "Narrative probability (%). Branches from one node should sum to ~100."
+        },
+        "label": { "type": "string", "description": "Short route label (2-4 words)" },
+        "etype": {
+          "type": "string",
+          "enum": ["cause", "flashback", "parallel", "dream", "hidden"],
+          "default": "cause",
+          "description": "Edge visual type. cause=solid, flashback=long-dash, parallel=dots, dream=dash-dot, hidden=sparse."
+        },
+        "reqFlags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "ALL listed flags must be active for this edge to be available"
+        },
+        "notFlags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "If ANY listed flag is active, this edge is hidden"
+        }
+      }
+    },
+    "viewState": {
+      "type": "object",
+      "description": "Editor viewport state (typically only in localStorage, not in exported files)",
+      "properties": {
+        "pan": {
+          "type": "object",
+          "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+        },
+        "zoom": { "type": "number" }
+      }
+    },
+    "aiConfig": {
+      "type": "object",
+      "description": "AI behavior configuration. Stored with the project, guides AI generation.",
+      "properties": {
+        "systemPrompt": { "type": "string", "description": "Global system prompt for all AI generation" },
+        "worldRules": { "type": "string", "description": "World-building rules, setting, constraints" },
+        "toneGuide": { "type": "string", "description": "Writing style, narrative voice, mood" },
+        "characterDefs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "personality": { "type": "string" },
+              "background": { "type": "string" },
+              "voice": { "type": "string" }
+            }
+          },
+          "description": "Character definitions keyed by character name"
+        },
+        "generationParams": {
+          "type": "object",
+          "properties": {
+            "temperature": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.9 },
+            "branchCount": { "type": "integer", "minimum": 1, "maximum": 5, "default": 3 },
+            "continueAtLeaves": { "type": "boolean", "default": true, "description": "Auto-generate AI branches at leaf nodes during walkthrough" }
+          }
+        }
+      }
+    }
+  }
+}
