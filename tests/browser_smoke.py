@@ -1,0 +1,127 @@
+import os, json
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+
+import argparse, tempfile
+parser=argparse.ArgumentParser()
+parser.add_argument('--output',type=Path)
+args=parser.parse_args()
+PROJECT=Path(__file__).resolve().parents[1]
+ROOT=PROJECT.parent
+OUT=args.output or Path(tempfile.mkdtemp(prefix='story-tree-check-'))
+OUT.mkdir(parents=True,exist_ok=True)
+checks=[]
+def check(name, value):
+    assert value, name
+    checks.append(name)
+
+with sync_playwright() as p:
+    browser=p.chromium.launch(headless=True,executable_path=os.environ.get('STORY_BROWSER_EXECUTABLE'))
+    for repo,rel,desktop in [(PROJECT.name,'src/index.html' if (PROJECT/'src').is_dir() else 'index.html',(PROJECT/'src').is_dir())]:
+        context=browser.new_context(viewport={'width':1440,'height':900},accept_downloads=True)
+        page=context.new_page()
+        errors=[]
+        page.on('pageerror',lambda e: errors.append(str(e)))
+        page.on('dialog',lambda d: d.accept())
+        page.goto((ROOT/repo/rel).as_uri())
+        check(repo+': initial shell',page.locator('#canvas-empty').is_visible())
+        if not os.environ.get('STORY_SKIP_SCREENSHOTS'): page.screenshot(path=str(OUT/(repo+'-empty.png')))
+        page.click('#empty-sample')
+        check(repo+': sample creates graph',page.evaluate('nodes.length===6&&edges.length===5'))
+        check(repo+': empty state hidden',not page.locator('#canvas-empty').is_visible())
+        page.evaluate('select(nodes[0],null)')
+        page.locator('#nd-text').fill('编辑后保留的场景')
+        page.locator('#nd-text').blur()
+        check(repo+': editing works',page.evaluate("nodes[0].text==='编辑后保留的场景'"))
+        page.locator('#nd-char-in').fill('<img src=x onerror=window.__injected=1>')
+        page.click('#nd-char-add')
+        check(repo+': character text escaped',page.locator('#nd-tags img').count()==0 and page.evaluate('window.__injected===undefined'))
+        page.click('#btn-settings')
+        page.fill('#cfg-endpoint','https://example.invalid/v1')
+        page.fill('#cfg-key','test-only-not-a-real-key')
+        page.click('#cfg-save')
+        check(repo+': session key default',page.evaluate("JSON.parse(localStorage.getItem(CFG_KEY)).key===''&&JSON.parse(sessionStorage.getItem(CFG_KEY)).key==='test-only-not-a-real-key'"))
+        with page.expect_download() as dl:
+            if page.locator('#btn-file-menu').count(): page.click('#btn-file-menu')
+            page.click('#btn-export')
+        export_path=OUT/(repo+'-roundtrip.json')
+        dl.value.save_as(export_path)
+        exported=json.loads(export_path.read_text(encoding='utf-8'))
+        check(repo+': export correct version',exported['version']==(2 if desktop else 1))
+        check(repo+': export excludes credentials','test-only-not-a-real-key' not in export_path.read_text(encoding='utf-8'))
+        page.evaluate('(data)=>loadData(data)',exported)
+        check(repo+': JSON roundtrip',page.evaluate("nodes.length===6&&nodes[0].text==='编辑后保留的场景'"))
+        before=page.evaluate('serializeState()')
+        bad_cases=[{'version':3,'nodes':[],'edges':[]},{'version':1,'nodes':[{'id':1},{'id':1}],'edges':[]},{'version':1,'nodes':[{'id':1}],'edges':[{'id':1,'from':1,'to':999}]},{'version':1,'nodes':[{'id':1,'characters':42}],'edges':[]}]
+        if not desktop: bad_cases.append({'version':2,'nodes':[],'edges':[]})
+        for bad in bad_cases:
+            check(repo+': invalid import rejected',page.evaluate('(data)=>{try{loadData(data);return false}catch(e){return true}}',bad))
+            check(repo+': invalid import preserves story',page.evaluate('serializeState()')==before)
+        page.evaluate("window.__setItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k===SAVE_KEY)throw new DOMException('full','QuotaExceededError');return window.__setItem.call(this,k,v)};save();")
+        check(repo+': storage failure visible',page.locator('#save-status').get_attribute('data-kind')=='error')
+        check(repo+': backup failure preserves graph',page.evaluate('nodes.length===6'))
+        page.evaluate('Storage.prototype.setItem=window.__setItem;save()')
+        page.reload()
+        check(repo+': restores saved graph',page.evaluate("nodes.length===6&&nodes[0].text==='编辑后保留的场景'"))
+        # Walk the real sample from its first scene; no external AI request is made.
+        page.evaluate('select(nodes[0],null)')
+        page.click('#btn-walk')
+        check(repo+': walkthrough starts',page.locator('#wt-overlay').is_visible())
+        page.locator('.wt-choice').first.click()
+        check(repo+': walkthrough reaches fork',page.locator('.wt-choice').count()==2)
+        page.locator('.wt-choice').first.click()
+        page.locator('.wt-choice').first.click()
+        check(repo+': walkthrough reaches ending',page.locator('.wt-ending').count()==1)
+        page.keyboard.press('Escape')
+        page.evaluate("document.getElementById('wt-overlay').classList.remove('show')")
+        if desktop:
+            import jsonschema
+            jsonschema.validate(exported,json.loads((ROOT/repo/'story-tree.schema.json').read_text(encoding='utf-8')))
+            check(repo+': exported schema valid',True)
+            page.evaluate("markClean();entities.characters.Test={desc:'changed'};save()")
+            check(repo+': entity edit marks dirty',page.evaluate('dirty'))
+            page.evaluate("markClean();aiConfig.world={name:'old world'};save()")
+            check(repo+': world edit marks dirty',page.evaluate('dirty'))
+            page.evaluate("loadData({version:1,nodes:[{id:10,text:'new'}],edges:[]})")
+            check(repo+': opening resets world and entities',page.evaluate("!aiConfig.world&&Object.keys(entities.characters).length===0"))
+            check(repo+': markdown text escaped',page.evaluate("!renderMarkdown('<img src=x onerror=alert(1)>').includes('<img')"))
+            page.evaluate("entities.characters.Test={desc:'old'};fileNew()")
+            check(repo+': new story resets entities',page.evaluate('Object.keys(entities.characters).length===0'))
+            page.click('#empty-sample')
+            page.evaluate('select(nodes[0],null)')
+            # Native API contract test using an isolated in-memory shell, not a claim of native execution.
+            native=context.new_page()
+            native.add_init_script('''var isTauri=()=>true;window.__TAURI__={window:{getCurrentWindow:()=>({setTitle:async()=>{},onCloseRequested:async()=>{},destroy:async()=>{}})},dialog:{save:async()=>'/test/story.json',open:async()=>null,confirm:async()=>false},fs:{writeTextFile:async()=>{throw new Error('Permission denied')},readTextFile:async()=>''}}''')
+            native.goto((ROOT/repo/rel).as_uri())
+            native.evaluate("showSampleStory();currentFile='/test/story.json';nodes[0].text='native edit';save()")
+            native.evaluate('fileSave()')
+            check(repo+': native save failure visible',native.locator('#save-status').get_attribute('data-kind')=='error')
+            check(repo+': native save failure stays dirty',native.evaluate('dirty'))
+            native.evaluate("async()=>{window.__TAURI__.fs.writeTextFile=()=>new Promise(r=>window.__finishSave=r);window.__pendingSave=fileSave();await Promise.resolve();await Promise.resolve();nodes[0].text='changed while saving';save();window.__finishSave()}")
+            native.evaluate('window.__pendingSave')
+            check(repo+': concurrent edit remains dirty',native.evaluate('dirty'))
+            native.close()
+        else:
+            page.evaluate('showSampleStory();select(nodes[0],null)')
+        # Batched visual check: wide, minimum desktop size, and mobile browser fallback.
+        for width,height,suffix in [(1440,900,'wide'),(800,600,'compact'),(390,844,'mobile')]:
+            page.set_viewport_size({'width':width,'height':height})
+            page.evaluate('fitView()')
+            if not os.environ.get('STORY_SKIP_SCREENSHOTS'): page.screenshot(path=str(OUT/(repo+'-'+suffix+'.png')))
+            check(repo+': no document overflow '+suffix,page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+        page.set_viewport_size({'width':1440,'height':900})
+        if page.locator('#btn-tools-menu').count(): page.click('#btn-tools-menu')
+        page.click('#btn-theme')
+        if not os.environ.get('STORY_SKIP_SCREENSHOTS'): page.screenshot(path=str(OUT/(repo+'-light.png')))
+        check(repo+': no page errors',not errors)
+        broken=context.new_page()
+        broken.add_init_script("localStorage.setItem('story-tree-desktop-data','{broken');localStorage.setItem('story-tree-data','{broken')")
+        broken.goto((ROOT/repo/rel).as_uri())
+        broken.click('#empty-create')
+        check(repo+': unreadable recovery preserved',broken.evaluate("localStorage.getItem(SAVE_KEY)==='{broken'"))
+        check(repo+': recovery problem visible',broken.locator('#save-status').get_attribute('data-kind')=='error')
+        broken.close()
+        context.close()
+    browser.close()
+(OUT/'test-results.json').write_text(json.dumps({'passed':len(checks),'checks':checks},ensure_ascii=False,indent=2),encoding='utf-8')
+print('PASS:',len(checks),'browser and data checks')

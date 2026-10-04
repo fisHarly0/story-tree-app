@@ -1,0 +1,102 @@
+"""Create alternatives, rename, reconnect, and split branches via the canvas UI."""
+import argparse,json,os
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+parser=argparse.ArgumentParser()
+parser.add_argument('--output',type=Path,required=True)
+args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
+root=Path(__file__).resolve().parents[1]
+checks=[]
+def check(name,value):
+    assert value,name
+    checks.append(name)
+with sync_playwright() as p:
+    browser=p.chromium.launch(headless=True,executable_path=os.environ.get('STORY_BROWSER_EXECUTABLE'))
+    page=browser.new_page(viewport={'width':1440,'height':900})
+    errors=[];page.on('pageerror',lambda error:errors.append(str(error)));page.on('dialog',lambda dialog:dialog.accept())
+    page.goto((root/'src/index.html').as_uri())
+    def fixture():
+        page.evaluate("loadData({version:2,nodes:[{id:1,text:'做出选择',x:-220,y:0},{id:2,text:'目标场景',x:220,y:300},{id:3,text:'另一条路线',x:-220,y:300},{id:4,text:'新的起点',x:220,y:0}],edges:[{id:10,from:1,to:2,probability:35,label:'原来的选择',reqFlags:['有钥匙'],notFlags:['关门'],reqItems:[{name:'钥匙',qty:1}],etype:'flashback'}]});pan={x:cvs.clientWidth/2,y:150};zoom=1;select(null,null);markClean();render();cvs.focus()")
+    def nodept(id):
+        return page.evaluate('(id)=>{const n=nodes.find(n=>n.id===id),p=w2s(n.x,n.y),r=cvs.getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}}',id)
+    def edgept(endpoint=None):
+        return page.evaluate("(endpoint)=>{const e=edges.find(e=>e.id===10),p=edgePoints(e),w=endpoint==='from'?{x:p.x1,y:p.y1}:endpoint==='to'?{x:p.x2,y:p.y2}:edgeMidpoint(e),pt=w2s(w.x,w.y),r=cvs.getBoundingClientRect();return {x:pt.x+r.left,y:pt.y+r.top}}",endpoint)
+    def click(point,**kwargs):page.mouse.click(point['x'],point['y'],**kwargs)
+    def drag(a,b):
+        page.mouse.move(a['x'],a['y']);page.mouse.down();page.mouse.move(b['x'],b['y'],steps=10);page.mouse.up()
+    fixture();click(nodept(1));page.click('#quick-branch')
+    check('branch form identifies captured origin',page.locator('#branch-composer').is_visible() and '做出选择' in page.locator('#branch-origin').inner_text())
+    check('branch creation frees inspector space for canvas',not page.locator('#panel').is_visible())
+    page.click('#branch-add');check('blank branch is not added',page.evaluate('nodes.length===4&&edges.length===1'))
+    for i in range(3):
+        page.fill('#branch-scene','备选场景 '+str(i));page.fill('#branch-choice','选择 '+str(i));page.click('#branch-add')
+    check('three alternatives created without reselecting parent',page.evaluate('nodes.length===7&&edges.length===4&&selNode.id===1&&edges.slice(1).every(e=>e.from===1)'))
+    check('choice text and scene summary saved together',page.evaluate("edges.at(-1).label==='选择 2'&&nodes.at(-1).text==='备选场景 2'"))
+    check('form stays open with next summary focused',page.locator('#branch-composer').is_visible() and page.locator('#branch-scene').evaluate('(el)=>el===document.activeElement'))
+    check('created scenes avoid existing nodes',page.evaluate("nodes.slice(4).every(n=>nodes.every(o=>o===n||Math.abs(n.x-o.x)>=(n.w+o.w)/2||Math.abs(n.y-o.y)>=(n.h+o.h)/2))"))
+    page.click('#branch-close');page.keyboard.press('Control+z')
+    check('finishing branches restores inspector',page.locator('#panel').is_visible())
+    check('branch creation is one undo step including choice text',page.evaluate("nodes.length===6&&edges.length===3&&edges.at(-1).label==='选择 1'"))
+    page.keyboard.press('Control+y');check('redo restores complete branch',page.evaluate("nodes.length===7&&edges.at(-1).label==='选择 2'"))
+    click(nodept(1));page.click('#quick-branch');page.keyboard.press('Escape')
+    check('escape closes branch form without creating scene',not page.locator('#branch-composer').is_visible() and page.evaluate('nodes.length===7'))
+    fixture();click(nodept(1));page.click('#quick-branch');click(nodept(3))
+    check('changing selection closes old branch source',not page.locator('#branch-composer').is_visible() and page.evaluate('branchSource===null'))
+    fixture();click(edgept())
+    check('selected edge exposes structural actions',page.locator('#edge-actions').is_visible())
+    original=page.evaluate('JSON.stringify(edges[0])')
+    drag(edgept('to'),nodept(3))
+    check('dragging target reconnects existing edge',page.evaluate('edges.length===1&&edges[0].id===10&&edges[0].from===1&&edges[0].to===3'))
+    check('reconnect preserves label probability and conditions',page.evaluate("edges[0].probability===35&&edges[0].label==='原来的选择'&&edges[0].reqFlags[0]==='有钥匙'&&edges[0].notFlags[0]==='关门'&&edges[0].reqItems[0].qty===1&&edges[0].etype==='flashback'"))
+    page.keyboard.press('Control+z');check('reconnect undo restores exact edge metadata',page.evaluate('JSON.stringify(edges[0])')==original)
+    click(edgept());drag(edgept('from'),nodept(4))
+    check('dragging source changes source without replacing edge',page.evaluate('edges[0].id===10&&edges[0].from===4&&edges[0].to===2&&edges[0].probability===35'))
+    fixture();click(edgept());a=edgept('to');page.mouse.move(a['x'],a['y']);page.mouse.down();page.mouse.move(a['x']-180,a['y']-80);page.keyboard.press('Escape');page.mouse.up()
+    check('escape preserves original connection',page.evaluate('edges[0].from===1&&edges[0].to===2'))
+    click(edgept());drag(edgept('to'),{'x':70,'y':350})
+    check('dropping endpoint on blank preserves edge',page.evaluate('nodes.length===4&&edges[0].to===2'))
+    click(edgept());drag(edgept('to'),nodept(1));check('self reconnection rejected',page.evaluate('edges[0].from===1&&edges[0].to===2'))
+    page.evaluate('addEdge(1,3);save();select(null,edges[0])');drag(edgept('to'),nodept(3))
+    check('duplicate reconnection rejected',page.evaluate('edges.length===2&&edges[0].to===2'))
+    fixture();click(edgept());page.click('#edge-insert')
+    check('insert scene splits original route',page.evaluate('nodes.length===5&&edges.length===2&&edges[0].from===1&&edges[0].to===selNode.id&&edges[1].from===selNode.id&&edges[1].to===2'))
+    check('original requirements stay before inserted scene',page.evaluate("edges[0].id===10&&edges[0].probability===35&&edges[0].reqFlags[0]==='有钥匙'&&edges[1].probability===100&&edges[1].reqFlags.length===0"))
+    check('insert begins inline summary edit',page.locator('#inline-edit').evaluate('(el)=>el===document.activeElement'))
+    page.keyboard.press('Escape');page.keyboard.press('Control+z')
+    check('one undo restores unsplit route',page.evaluate('nodes.length===4&&edges.length===1&&edges[0].to===2'))
+    fixture();click(edgept());page.click('#edge-rename');page.fill('#edge-label-text','打开车门');page.keyboard.press('Enter')
+    check('edit choice directly on canvas',page.evaluate("edges[0].label==='打开车门'") and not page.locator('#edge-label-editor').is_visible())
+    page.keyboard.press('Control+z');check('choice rename is undoable',page.evaluate("edges[0].label==='原来的选择'"))
+    click(edgept());page.click('#edge-rename');page.fill('#edge-label-text','草稿');page.keyboard.press('Escape')
+    check('choice editor escape discards draft',page.evaluate("edges[0].label==='原来的选择'"))
+    click(edgept(),click_count=2);check('double click line opens choice editor without new node',page.locator('#edge-label-editor').is_visible() and page.evaluate('nodes.length===4'))
+    page.keyboard.press('Escape');click(edgept());page.click('#edge-rename')
+    page.evaluate('fileNew()');check('new document dismisses stale choice editor',not page.locator('#edge-label-editor').is_visible() and page.evaluate('editingEdgeLabel===null'))
+    fixture();page.evaluate("nodes[0].parentGroup='第一章';nodes[1].parentGroup='第一章';currentScope='第一章';save();select(null,edges[0])");page.click('#edge-insert')
+    check('insert inherits source subgraph',page.evaluate("selNode.parentGroup==='第一章'"));page.keyboard.press('Escape')
+    fixture();page.evaluate('collapsed.add(1);select(nodes[0],null)');page.click('#quick-branch');page.fill('#branch-scene','展开后可见的新场景');page.click('#branch-add')
+    check('adding branch expands origin',page.evaluate('!collapsed.has(1)&&!isHidden(nodes.at(-1).id)'))
+    page.click('#branch-close')
+    # Schema roundtrip after structural mutation uses existing v2 fields.
+    data=page.evaluate('JSON.parse(getFileData())');page.evaluate('(data)=>loadData(data)',data)
+    check('structural edit roundtrip preserves routing',page.evaluate("edges.length===2&&nodes.at(-1).text==='展开后可见的新场景'"))
+    import jsonschema
+    jsonschema.validate(data,json.loads((root/'story-tree.schema.json').read_text(encoding='utf-8')))
+    check('structural data remains schema valid',True)
+    page.evaluate('showSampleStory();fitView();select(null,edges[0])')
+    points=page.evaluate("()=>{const p=edgePoints(edges[0]),r=cvs.getBoundingClientRect(),a=w2s(p.x2,p.y2),b=w2s(nodes[2].x,nodes[2].y);return {a:{x:a.x+r.left,y:a.y+r.top},b:{x:b.x+r.left,y:b.y+r.top}}}")
+    check('short edge endpoint stays unobstructed by toolbar',page.evaluate('(p)=>document.elementFromPoint(p.x,p.y)===cvs',points['a']))
+    drag(points['a'],points['b'])
+    check('short edge can be reconnected by real pointer',page.evaluate('edges[0].to===nodes[2].id'))
+    # Build all views before one visual inspection batch.
+    page.evaluate('showSampleStory();select(nodes[1],null);fitView()');page.click('#quick-branch')
+    page.fill('#branch-scene','跟随广播，寻找十年前的自己');page.fill('#branch-choice','走向站台')
+    for w,h,name in [(1440,900,'wide'),(800,600,'compact'),(390,844,'mobile')]:
+        page.set_viewport_size({'width':w,'height':h});page.evaluate('fitView()');page.screenshot(path=str(args.output/('structure-'+name+'.png')))
+        check('no overflow '+name,page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+    page.set_viewport_size({'width':1440,'height':900});page.click('#branch-close');page.evaluate('select(null,edges[1]);fitView()');page.screenshot(path=str(args.output/'structure-edge.png'))
+    check('no runtime errors',not errors)
+    browser.close()
+report={'passed':len(checks),'checks':checks}
+(args.output/'structure-results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+print(json.dumps(report,ensure_ascii=False))

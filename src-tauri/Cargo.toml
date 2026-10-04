@@ -1,8 +1,8 @@
 [package]
 name = "d-story-tree-app"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Visual branching story editor with local files and optional AI assistance"
+authors = ["Harly"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

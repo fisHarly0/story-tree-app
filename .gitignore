@@ -26,3 +26,8 @@ dist-ssr
 # Environment
 .env
 .env.*
+
+# Test reports and Python cache
+test-results/
+__pycache__/
+*.pyc

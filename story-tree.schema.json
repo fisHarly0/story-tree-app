@@ -20,7 +20,8 @@
       "items": { "$ref": "#/$defs/edge" }
     },
     "view": { "$ref": "#/$defs/viewState" },
-    "aiConfig": { "$ref": "#/$defs/aiConfig" }
+    "aiConfig": { "$ref": "#/$defs/aiConfig" },
+    "entities": { "$ref": "#/$defs/entities" }
   },
   "$defs": {
     "node": {
@@ -41,11 +42,41 @@
           "items": { "type": "string" },
           "description": "Flags automatically set when the player enters this node"
         },
+        "varMods": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/varMod" },
+          "description": "Variable modifications applied when the player enters this node"
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/itemMod" },
+          "description": "Items given or taken when the player enters this node"
+        },
         "category": {
           "type": "string",
           "enum": ["daily", "conflict", "turning", "climax", "ending"],
           "default": "daily",
           "description": "Node category. Controls color indicator on canvas."
+        },
+        "bookmark": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this node is bookmarked for quick navigation (press B)"
+        },
+        "isRandom": {
+          "type": "boolean",
+          "default": false,
+          "description": "Random event node. In walkthrough, auto-selects a child edge by probability instead of showing choices."
+        },
+        "group": {
+          "type": "string",
+          "default": "",
+          "description": "Sub-graph/macro name. Non-empty = this node defines a reusable sub-graph with this name."
+        },
+        "parentGroup": {
+          "type": "string",
+          "default": "",
+          "description": "Which group scope this node belongs to. Used for nested zoom filtering."
         },
         "x": { "type": "number", "description": "Canvas X position (center)" },
         "y": { "type": "number", "description": "Canvas Y position (center)" },
@@ -82,6 +113,107 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "If ANY listed flag is active, this edge is hidden"
+        },
+        "varConds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/varCond" },
+          "description": "Variable conditions. ALL must be met for this edge to be available."
+        },
+        "diceCheck": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/diceCheck" }
+          ],
+          "default": null,
+          "description": "Dice roll check. If set, player must pass a dice roll to follow this edge."
+        },
+        "reqItems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/itemReq" },
+          "description": "Required items. Player must have all listed items to follow this edge."
+        }
+      }
+    },
+    "varMod": {
+      "type": "object",
+      "required": ["name", "op", "val"],
+      "properties": {
+        "name": { "type": "string", "description": "Variable name" },
+        "op": { "type": "string", "enum": ["+", "-", "="], "description": "Operation: add, subtract, or set" },
+        "val": { "type": "number", "description": "Operand value" }
+      }
+    },
+    "varCond": {
+      "type": "object",
+      "required": ["name", "op", "val"],
+      "properties": {
+        "name": { "type": "string", "description": "Variable name to check" },
+        "op": { "type": "string", "enum": [">", ">=", "<", "<=", "==", "!="], "description": "Comparison operator" },
+        "val": { "type": "number", "description": "Value to compare against" }
+      }
+    },
+    "itemMod": {
+      "type": "object",
+      "required": ["name", "qty", "action"],
+      "properties": {
+        "name": { "type": "string", "description": "Item name" },
+        "qty": { "type": "integer", "minimum": 1, "description": "Quantity" },
+        "action": { "type": "string", "enum": ["give", "take"], "description": "give = add to inventory, take = remove from inventory" }
+      }
+    },
+    "itemReq": {
+      "type": "object",
+      "required": ["name", "qty"],
+      "properties": {
+        "name": { "type": "string", "description": "Required item name" },
+        "qty": { "type": "integer", "minimum": 1, "description": "Required quantity" }
+      }
+    },
+    "diceCheck": {
+      "type": "object",
+      "required": ["stat", "dc", "sides"],
+      "properties": {
+        "stat": { "type": "string", "description": "Stat/skill name to check (e.g. '力量', '交涉')" },
+        "dc": { "type": "integer", "minimum": 1, "description": "Difficulty class. Roll must be >= dc to pass." },
+        "sides": { "type": "integer", "minimum": 2, "default": 20, "description": "Number of sides on the die (e.g. 20 for d20)" }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "description": "Entity database: structured data for characters, items, and locations",
+      "properties": {
+        "characters": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "desc": { "type": "string" },
+              "traits": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "items": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "desc": { "type": "string" },
+              "rarity": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "desc": { "type": "string" },
+              "type": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
         }
       }
     },
@@ -121,6 +253,29 @@
             "temperature": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.9 },
             "branchCount": { "type": "integer", "minimum": 1, "maximum": 5, "default": 3 },
             "continueAtLeaves": { "type": "boolean", "default": true, "description": "Auto-generate AI branches at leaf nodes during walkthrough" }
+          }
+        },
+        "world": {
+          "type": "object",
+          "description": "World-building preset data",
+          "properties": {
+            "name": { "type": "string" },
+            "genre": { "type": "string" },
+            "era": { "type": "string" },
+            "power": { "type": "string" },
+            "conflict": { "type": "string" },
+            "tone": { "type": "string" },
+            "rules": { "type": "string" },
+            "factions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "desc": { "type": "string" }
+                }
+              }
+            }
           }
         }
       }
